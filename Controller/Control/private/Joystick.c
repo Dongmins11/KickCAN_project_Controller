@@ -1,4 +1,8 @@
 #include "Joystick.h"
+#include "Controller.h"
+#include "USART_Manager.h"
+#include "adc.h"
+#include "stm32f4xx_hal_uart.h"
 
 static EMA_FilterStruct pFilter_X = {0,};
 static EMA_FilterStruct pFilter_Y = {0,};
@@ -8,6 +12,7 @@ void Joystick_Init()
 {
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)Joystick_Value, JOYSTICK_DMA_LENGTH);
 }
+
 
 void Clamp_JoystickValue()
 {
@@ -45,6 +50,10 @@ uint16_t Filter_JoystickValue(EMA_FilterStruct* filter, uint16_t input)
     return (uint16_t)(filter->value / scale);
 }
 
+static  Protocol_DataFrame data = {};
+
+
+
 
 void Joystick_Progress()
 {
@@ -53,8 +62,18 @@ void Joystick_Progress()
 
   Clamp_JoystickValue();
   
+  data.protocal_Id = PROTOCOL_ID;
+  data.command_Id = C_STEERING_CONTROL;
+  data.data[0] = (uint8_t)((Joystick_Value[Y] >> 8) & 0xFF);
+  data.data[1] = (uint8_t)(Joystick_Value[Y] & 0xFF);
+
+  data.data[2] = (uint8_t)((Joystick_Value[X] >> 8) & 0xFF);
+  data.data[3] = (uint8_t)(Joystick_Value[X] & 0xFF);
+  data.end = 0xFF;
+
   // 테스트로 UART 데이터 송신
   // printf("X : [%u] \r\n Y : %u \r\n", Joystick_Value[X], Joystick_Value[Y]);
+  Send_Data(data);
 }
 
 

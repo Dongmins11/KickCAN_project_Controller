@@ -11,4 +11,10 @@
 #include "RFID.h"
 #include "Bluetooth.h"
 #include "USART_Manager.h"
+
 #include "sysconfig.h"
+#include "def.h"
+
+#include "my_uart.h"
+#include "my_spi.h"
+#include "my_adc.h"

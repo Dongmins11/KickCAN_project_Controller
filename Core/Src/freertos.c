@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
+#include "USART_Manager.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -52,15 +53,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == PA4_A2_KLAXON_Pin)
   {
-    static uint8_t count1 = 0;
+    // static uint8_t count1 = 0;
     static uint32_t last_exti_time = 0;
     uint32_t current_time = osKernelGetTickCount();
 
     if ((current_time - last_exti_time) < 100) 
       return; 
 
-    printf("[%d] call \r\n", count1++);
+    Protocol_DataFrame dataFrame = {0,};
+    dataFrame.protocal_Id = PROTOCOL_ID;
+    dataFrame.command_Id = C_HORN_SIGNAL;
+    Send_Data(dataFrame);
 
+    // printf("[%d] call \r\n", count1++);
     last_exti_time = current_time;
   }
 }
@@ -141,10 +146,10 @@ void MX_FREERTOS_Init(void) {
   JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
 
   /* creation of RFID */
-  RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
+  // RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -187,13 +192,13 @@ void JoystickTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    // Joystick_Progress();
+      Joystick_Progress();
 
     //  uint32_t start_tick = osKernelGetTickCount();
     //   if(osKernelGetTickCount() - start_tick < 5)
     // previous_button = current_button;
 
-    osDelay(1);
+    osDelay(10);
   }
   /* USER CODE END JoystickTask */
 }
@@ -208,10 +213,7 @@ void JoystickTask(void *argument)
 void RFIDTask(void *argument)
 {
   /* USER CODE BEGIN RFIDTask */
-    RC522_Init();
-    osDelay(100);
-    uint8_t ver = RC522_ReadReg(VersionReg);
-    printf("Version : 0x%02X \r\n", ver);
+  RC522_Init();
 
   /* Infinite loop */
   for(;;)
@@ -230,7 +232,8 @@ void RFIDTask(void *argument)
         osDelay(500);
        }
     }
-    osDelay(100);
+
+    osDelay(1);
   }
   /* USER CODE END RFIDTask */
 }
@@ -249,7 +252,7 @@ void BluetoothTask(void *argument)
     for (;;)
     { 
       // Bluetooth_ATProgress();
-      // Bluetooth_Progress();
+      // Bluetooth_TestProgress();
       osDelay(1);
     }
   /* USER CODE END BluetoothTask */

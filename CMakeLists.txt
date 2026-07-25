@@ -43,10 +43,12 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 file(GLOB_RECURSE SRC_FILES "Controller/*.c")
+file(GLOB_RECURSE SRC_FILES2 "My_main/*.c")
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${SRC_FILES}
+    ${SRC_FILES2}
 )
 
 # # Add include paths
@@ -55,6 +57,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 # )
 # 1. MyApp 내부의 모든 .h 헤더 파일의 위치(경로)를 찾아서 변수에 저장
 file(GLOB_RECURSE HEADER_FILES "Controller/*.h")
+file(GLOB_RECURSE HEADER_FILES2 "My_main/*.h")
 
 # 2. 찾은 헤더 파일들의 경로에서 파일명을 제외한 '폴더 경로'만 추출하여 리스트 생성
 set(INCLUDE_DIRS "")
@@ -66,8 +69,24 @@ endforeach()
 # 3. 중복된 폴더 경로 제거 (하나의 폴더에 헤더가 여러 개 있을 수 있으므로)
 list(REMOVE_DUPLICATES INCLUDE_DIRS)
 
+
+file(GLOB_RECURSE HEADER_FILES2 "My_main/*.h")
+
+# 2. 찾은 헤더 파일들의 경로에서 파일명을 제외한 '폴더 경로'만 추출하여 리스트 생성
+set(INCLUDE_DIRS2 "")
+foreach(HEADER_FILE ${HEADER_FILES2})
+    get_filename_component(DIR_PATH ${HEADER_FILE} DIRECTORY)
+    list(APPEND INCLUDE_DIRS2 ${DIR_PATH})
+endforeach()
+
+# 3. 중복된 폴더 경로 제거 (하나의 폴더에 헤더가 여러 개 있을 수 있으므로)
+list(REMOVE_DUPLICATES INCLUDE_DIRS2)
+
+
+
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${INCLUDE_DIRS}
+    ${INCLUDE_DIRS2}
 )
 
 # Add project symbols (macros)

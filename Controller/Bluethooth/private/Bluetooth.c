@@ -257,7 +257,7 @@ void Bluetooth_Receive(void)
 }
 
 
-void Bluetooth_Progress(void)
+void Bluetooth_TestProgress(void)
 {
     // Bluetooth_Send();
     // Bluetooth_Receive();
