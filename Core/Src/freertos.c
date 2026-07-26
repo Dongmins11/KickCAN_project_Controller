@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "USART_Manager.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -68,6 +67,34 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     // printf("[%d] call \r\n", count1++);
     last_exti_time = current_time;
   }
+
+  if(GPIO_Pin == PB0_A3_TurnL_Pin)
+  {
+        // static uint8_t count1 = 0;
+    static uint32_t last_exti_time = 0;
+    uint32_t current_time = osKernelGetTickCount();
+
+    if ((current_time - last_exti_time) < 100) 
+      return; 
+
+    printf("left \r\n");
+
+    last_exti_time = current_time;
+  } 
+
+  if(GPIO_Pin == PC1_A4_TurnR_Pin)
+  {
+    static uint32_t last_exti_time = 0;
+    uint32_t current_time = osKernelGetTickCount();
+
+    if ((current_time - last_exti_time) < 100) 
+      return; 
+
+    printf("Right \r\n");
+
+    last_exti_time = current_time;
+  }
+
 }
 
 /* USER CODE END Variables */
@@ -146,10 +173,10 @@ void MX_FREERTOS_Init(void) {
   JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
 
   /* creation of RFID */
-  // RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
+  RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

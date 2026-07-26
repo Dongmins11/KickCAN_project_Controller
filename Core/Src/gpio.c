@@ -65,11 +65,23 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PC1_A4_TurnR_Pin */
+  GPIO_InitStruct.Pin = PC1_A4_TurnR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(PC1_A4_TurnR_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PA4_A2_KLAXON_Pin */
   GPIO_InitStruct.Pin = PA4_A2_KLAXON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(PA4_A2_KLAXON_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB0_A3_TurnL_Pin PB6_D10_RFIRQ_Pin */
+  GPIO_InitStruct.Pin = PB0_A3_TurnL_Pin|PB6_D10_RFIRQ_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB10_D6_BEN_Pin */
   GPIO_InitStruct.Pin = PB10_D6_BEN_Pin;
@@ -92,13 +104,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(PA8_D7_RFCC_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB6_D10_RFIRQ_Pin */
-  GPIO_InitStruct.Pin = PB6_D10_RFIRQ_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(PB6_D10_RFIRQ_GPIO_Port, &GPIO_InitStruct);
-
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
   HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 

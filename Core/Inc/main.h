@@ -59,6 +59,9 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define PC1_A4_TurnR_Pin GPIO_PIN_1
+#define PC1_A4_TurnR_GPIO_Port GPIOC
+#define PC1_A4_TurnR_EXTI_IRQn EXTI1_IRQn
 #define PA2_PD1_TX_Pin GPIO_PIN_2
 #define PA2_PD1_TX_GPIO_Port GPIOA
 #define PA3_D0_RX_Pin GPIO_PIN_3
@@ -66,6 +69,9 @@ void Error_Handler(void);
 #define PA4_A2_KLAXON_Pin GPIO_PIN_4
 #define PA4_A2_KLAXON_GPIO_Port GPIOA
 #define PA4_A2_KLAXON_EXTI_IRQn EXTI4_IRQn
+#define PB0_A3_TurnL_Pin GPIO_PIN_0
+#define PB0_A3_TurnL_GPIO_Port GPIOB
+#define PB0_A3_TurnL_EXTI_IRQn EXTI0_IRQn
 #define PB10_D6_BEN_Pin GPIO_PIN_10
 #define PB10_D6_BEN_GPIO_Port GPIOB
 #define PC7_D9_RFRST_Pin GPIO_PIN_7
