@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "sysconfig.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -99,14 +98,14 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t JoystickHandle;
 const osThreadAttr_t Joystick_attributes = {
   .name = "Joystick",
-  .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for RFID */
 osThreadId_t RFIDHandle;
 const osThreadAttr_t RFID_attributes = {
   .name = "RFID",
-  .stack_size = 512 * 4,
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for Bluetooth */
@@ -120,13 +119,8 @@ const osThreadAttr_t Bluetooth_attributes = {
 osThreadId_t SwtichHandle;
 const osThreadAttr_t Swtich_attributes = {
   .name = "Swtich",
-  .stack_size = 512 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for SendMutex */
-osMutexId_t SendMutexHandle;
-const osMutexAttr_t SendMutex_attributes = {
-  .name = "SendMutex"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -151,9 +145,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
-  /* Create the mutex(es) */
-  /* creation of SendMutex */
-  SendMutexHandle = osMutexNew(&SendMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -182,7 +173,7 @@ void MX_FREERTOS_Init(void) {
   RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Swtich */
   SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
