@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main.h"
+#include "sysconfigs.h"
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -10,6 +10,3 @@ void Bluetooth_ATProgress(void);
 void Bluetooth_TestProgress(void);
 void Bluetooth_Send(void);
 void Bluetooth_Receive(void);
-
-void Bluetooth_CurrentState();
-void Bluetooth_TryReconnecting();

@@ -54,7 +54,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == PA4_A2_KLAXON_Pin)
   {
-    // static uint8_t count1 = 0;
     static uint32_t last_exti_time = 0;
     uint32_t current_time = osKernelGetTickCount();
 
@@ -66,7 +65,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     // dataFrame.command_Id = C_HORN_SIGNAL;
     // Send_Data(dataFrame);
 
-    // printf("[%d] call \r\n", count1++);
     last_exti_time = current_time;
   }
 
@@ -79,8 +77,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       return; 
 
     turnToggle_flag = 1;
-
-    printf("left \r\n");
 
     last_exti_time = current_time;
   } 
@@ -293,8 +289,8 @@ void BluetoothTask(void *argument)
 */
 typedef enum
 {
-  TURN_TOGGLE_LEFT = 0,
-  TURN_TOGGLE_MIDDLE = 1,
+  TURN_TOGGLE_MIDDLE = 0,
+  TURN_TOGGLE_LEFT = 1,
   TURN_TOGGLE_RIGHT = 2,
   TURN_TOGGLE_NONE = 4,
 } Trun_ToggleState;

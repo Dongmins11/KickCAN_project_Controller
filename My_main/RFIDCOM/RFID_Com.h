@@ -2,4 +2,4 @@
 
 #include "sysconfigs.h"
 
-void My_ADC_Init();
+void RFID_Process();
