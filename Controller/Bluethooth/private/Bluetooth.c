@@ -1,4 +1,8 @@
 #include "Bluetooth.h"
+#include "cmsis_os2.h"
+#include "main.h"
+#include "stm32f4xx_hal_def.h"
+#include "stm32f4xx_hal_gpio.h"
 #include "stm32f4xx_hal_uart.h"
 #include "usart.h"
 
@@ -7,12 +11,15 @@
 
 #define AT_COMMAND_SIZE          (64)
 #define AT_RESPONSE_SIZE         (128)
-#define AT_RECEIVE_TIMEOUT       (10000)
+#define AT_RECEIVE_TIMEOUT       (1000)
 #define AT_RESPONSE_IDLE_TIME    (100)
+
+#define FAILED_CONNECTINGTIMER (7000)
 
 static char commandBuffer[AT_COMMAND_SIZE];
 static uint16_t commandLength;
 static uint8_t skipLineFeed;
+static uint16_t g_failedConnectingTime = 0;
 
 static void Bluetooth_Print(const char* text)
 {
@@ -270,3 +277,28 @@ void Bluetooth_TestProgress(void)
     if (HAL_UART_Receive(&huart1, &data, sizeof(uint8_t), 1) == HAL_OK)
         HAL_UART_Transmit(&huart2, &data, 1, 100);
 }
+
+void Bluetooth_CurrentState()
+{   
+
+
+}
+
+// void Bluetooth_TryReconnecting()
+// {
+//     if(HAL_GPIO_ReadPin(PC0_A5_TGS_GPIO_Port, PC0_A5_TGS_Pin) == GPIO_PIN_RESET)
+//         g_failedConnectingTime = osKernelGetTickCount(); 
+
+//     if(osKernelGetTickCount() - g_failedConnectingTime < FAILED_CONNECTINGTIMER)
+//     {
+
+
+
+//     }
+
+// }
+
+
+
+
+

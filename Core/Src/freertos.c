@@ -48,6 +48,8 @@
 /* USER CODE BEGIN Variables */
 
 
+volatile uint8_t turnToggle_flag = 0;
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == PA4_A2_KLAXON_Pin)
@@ -68,33 +70,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     last_exti_time = current_time;
   }
 
-  if(GPIO_Pin == PB0_A3_TurnL_Pin)
+  if(GPIO_Pin == PB0_A3_TurnL_Pin || GPIO_Pin == PC1_A4_TurnR_Pin)
   {
-        // static uint8_t count1 = 0;
     static uint32_t last_exti_time = 0;
     uint32_t current_time = osKernelGetTickCount();
 
     if ((current_time - last_exti_time) < 100) 
       return; 
+
+    turnToggle_flag = 1;
 
     printf("left \r\n");
 
     last_exti_time = current_time;
   } 
-
-  if(GPIO_Pin == PC1_A4_TurnR_Pin)
-  {
-    static uint32_t last_exti_time = 0;
-    uint32_t current_time = osKernelGetTickCount();
-
-    if ((current_time - last_exti_time) < 100) 
-      return; 
-
-    printf("Right \r\n");
-
-    last_exti_time = current_time;
-  }
-
 }
 
 /* USER CODE END Variables */
@@ -126,6 +115,13 @@ const osThreadAttr_t Bluetooth_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for Swtich */
+osThreadId_t SwtichHandle;
+const osThreadAttr_t Swtich_attributes = {
+  .name = "Swtich",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -136,6 +132,7 @@ void StartDefaultTask(void *argument);
 void JoystickTask(void *argument);
 void RFIDTask(void *argument);
 void BluetoothTask(void *argument);
+void SwtichTesk(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -170,13 +167,16 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of Joystick */
-  JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
+  // JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
 
   /* creation of RFID */
-  RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
+  // RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
   BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+
+  /* creation of Swtich */
+  // SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -219,7 +219,7 @@ void JoystickTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-      Joystick_Progress();
+      // Joystick_Progress();
 
     //  uint32_t start_tick = osKernelGetTickCount();
     //   if(osKernelGetTickCount() - start_tick < 5)
@@ -278,11 +278,69 @@ void BluetoothTask(void *argument)
 
     for (;;)
     { 
-      // Bluetooth_ATProgress();
+      Bluetooth_ATProgress();
       // Bluetooth_TestProgress();
       osDelay(1);
     }
   /* USER CODE END BluetoothTask */
+}
+
+/* USER CODE BEGIN Header_SwtichTesk */
+/**
+* @brief Function implementing the Swtich thread.
+* @param argument: Not used
+* @retval None
+*/
+typedef enum
+{
+  TURN_TOGGLE_LEFT = 0,
+  TURN_TOGGLE_MIDDLE = 1,
+  TURN_TOGGLE_RIGHT = 2,
+  TURN_TOGGLE_NONE = 4,
+} Trun_ToggleState;
+
+
+/* USER CODE END Header_SwtichTesk */
+void SwtichTesk(void *argument)
+{
+  /* USER CODE BEGIN SwtichTesk */
+  /* Infinite loop */
+  for(;;)
+  {
+    if(turnToggle_flag == 1)
+    {
+      Trun_ToggleState toggle_State = TURN_TOGGLE_NONE;
+
+      GPIO_PinState leftState = HAL_GPIO_ReadPin(PB0_A3_TurnL_GPIO_Port, PB0_A3_TurnL_Pin);
+      GPIO_PinState rightState = HAL_GPIO_ReadPin(PC1_A4_TurnR_GPIO_Port, PC1_A4_TurnR_Pin);
+
+      if(leftState == GPIO_PIN_RESET && rightState == GPIO_PIN_SET)
+        toggle_State = TURN_TOGGLE_LEFT;
+      
+      if(leftState == GPIO_PIN_SET && rightState == GPIO_PIN_SET)
+        toggle_State = TURN_TOGGLE_MIDDLE;
+
+      if(leftState == GPIO_PIN_SET && rightState == GPIO_PIN_RESET)
+        toggle_State = TURN_TOGGLE_RIGHT;
+
+      if(toggle_State != TURN_TOGGLE_NONE)
+      {
+        Protocol_DataFrame dataFrame = {0,};
+
+        dataFrame.protocal_Id = PROTOCOL_ID;
+        dataFrame.command_Id = C_TURN_SIGNAL;
+        dataFrame.data[0] = (uint8_t)toggle_State;
+        dataFrame.end = 0xFF;
+
+        Send_Data(dataFrame);
+      }
+
+      turnToggle_flag = 0;
+    }
+
+    osDelay(1);
+  }
+  /* USER CODE END SwtichTesk */
 }
 
 /* Private application code --------------------------------------------------*/
