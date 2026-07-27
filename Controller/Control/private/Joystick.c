@@ -62,7 +62,7 @@ void Joystick_Progress()
 
   Clamp_JoystickValue();
   
-  data.protocal_Id = PROTOCOL_ID;
+  data.protocal_Id = PROTOCOL_ID_MAIN;
   data.command_Id = C_STEERING_CONTROL;
   data.data[0] = (uint8_t)((Joystick_Value[Y] >> 8) & 0xFF);
   data.data[1] = (uint8_t)(Joystick_Value[Y] & 0xFF);

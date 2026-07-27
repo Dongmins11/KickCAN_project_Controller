@@ -51,7 +51,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(PB10_D6_BEN_GPIO_Port, PB10_D6_BEN_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(PB10_D6_BEN_GPIO_Port, PB10_D6_BEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(PC7_D9_RFRST_GPIO_Port, PC7_D9_RFRST_Pin, GPIO_PIN_SET);
