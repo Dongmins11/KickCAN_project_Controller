@@ -167,16 +167,16 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of Joystick */
-  // JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
+  JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
 
   /* creation of RFID */
-  // RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
+  RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
   BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Swtich */
-  // SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
+  SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -304,7 +304,7 @@ typedef enum
 void SwtichTesk(void *argument)
 {
   /* USER CODE BEGIN SwtichTesk */
-  /* Infinite loop */
+  /* Infinite loop */\
   for(;;)
   {
     if(turnToggle_flag == 1)
