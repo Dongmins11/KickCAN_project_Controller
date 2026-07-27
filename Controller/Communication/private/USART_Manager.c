@@ -10,6 +10,8 @@ static uint8_t g_IsReceive = 0;
 
 extern UART_HandleTypeDef huart1;
 
+static volatile uint8_t copyData[10] = {0,};
+
 void Send_Data(Protocol_DataFrame _DataFrame)
 {
     if(g_sendState == SEND_DISABLE || g_IsSending == 1)
@@ -17,8 +19,10 @@ void Send_Data(Protocol_DataFrame _DataFrame)
 
     g_IsSending = 1;
     
-    uint8_t copyData[10] = {0,};
+    // uint8_t copyData[10] = {0,};
 
+    // ADDR:0022:08:310F5C
+    memset(&copyData, 0, 10);
     memcpy(copyData, &_DataFrame, sizeof(_DataFrame));
     HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)copyData, sizeof(copyData), 300);
     memset(&copyData, 0, 10);

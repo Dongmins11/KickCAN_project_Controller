@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
+#include "sysconfig.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -61,10 +62,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if ((current_time - last_exti_time) < 100) 
       return; 
 
-    Protocol_DataFrame dataFrame = {0,};
-    dataFrame.protocal_Id = PROTOCOL_ID;
-    dataFrame.command_Id = C_HORN_SIGNAL;
-    Send_Data(dataFrame);
+    // Protocol_DataFrame dataFrame = {0,};
+    // dataFrame.protocal_Id = PROTOCOL_ID;
+    // dataFrame.command_Id = C_HORN_SIGNAL;
+    // Send_Data(dataFrame);
 
     // printf("[%d] call \r\n", count1++);
     last_exti_time = current_time;
@@ -98,14 +99,14 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t JoystickHandle;
 const osThreadAttr_t Joystick_attributes = {
   .name = "Joystick",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for RFID */
 osThreadId_t RFIDHandle;
 const osThreadAttr_t RFID_attributes = {
   .name = "RFID",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for Bluetooth */
@@ -119,8 +120,13 @@ const osThreadAttr_t Bluetooth_attributes = {
 osThreadId_t SwtichHandle;
 const osThreadAttr_t Swtich_attributes = {
   .name = "Swtich",
-  .stack_size = 256 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for SendMutex */
+osMutexId_t SendMutexHandle;
+const osMutexAttr_t SendMutex_attributes = {
+  .name = "SendMutex"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -145,6 +151,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* creation of SendMutex */
+  SendMutexHandle = osMutexNew(&SendMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -173,7 +182,7 @@ void MX_FREERTOS_Init(void) {
   RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Swtich */
   SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
@@ -219,7 +228,7 @@ void JoystickTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-      // Joystick_Progress();
+      Joystick_Progress();
 
     //  uint32_t start_tick = osKernelGetTickCount();
     //   if(osKernelGetTickCount() - start_tick < 5)
@@ -278,7 +287,7 @@ void BluetoothTask(void *argument)
 
     for (;;)
     { 
-      Bluetooth_ATProgress();
+      // Bluetooth_ATProgress();
       // Bluetooth_TestProgress();
       osDelay(1);
     }
@@ -327,18 +336,18 @@ void SwtichTesk(void *argument)
       {
         Protocol_DataFrame dataFrame = {0,};
 
-        dataFrame.protocal_Id = PROTOCOL_ID;
+        dataFrame.protocal_Id = PROTOCOL_ID_NODE_2;
         dataFrame.command_Id = C_TURN_SIGNAL;
         dataFrame.data[0] = (uint8_t)toggle_State;
         dataFrame.end = 0xFF;
 
-        Send_Data(dataFrame);
+        // Send_Data(dataFrame);
       }
 
       turnToggle_flag = 0;
     }
 
-    osDelay(1);
+    osDelay(100);
   }
   /* USER CODE END SwtichTesk */
 }
