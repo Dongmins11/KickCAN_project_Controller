@@ -54,7 +54,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == PA4_A2_KLAXON_Pin)
   {
-    // static uint8_t count1 = 0;
     static uint32_t last_exti_time = 0;
     uint32_t current_time = osKernelGetTickCount();
 
@@ -66,7 +65,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     // dataFrame.command_Id = C_HORN_SIGNAL;
     // Send_Data(dataFrame);
 
-    // printf("[%d] call \r\n", count1++);
     last_exti_time = current_time;
   }
 
@@ -79,8 +77,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       return; 
 
     turnToggle_flag = 1;
-
-    printf("left \r\n");
 
     last_exti_time = current_time;
   } 
@@ -98,14 +94,14 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t JoystickHandle;
 const osThreadAttr_t Joystick_attributes = {
   .name = "Joystick",
-  .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for RFID */
 osThreadId_t RFIDHandle;
 const osThreadAttr_t RFID_attributes = {
   .name = "RFID",
-  .stack_size = 512 * 4,
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for Bluetooth */
@@ -119,13 +115,8 @@ const osThreadAttr_t Bluetooth_attributes = {
 osThreadId_t SwtichHandle;
 const osThreadAttr_t Swtich_attributes = {
   .name = "Swtich",
-  .stack_size = 512 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for SendMutex */
-osMutexId_t SendMutexHandle;
-const osMutexAttr_t SendMutex_attributes = {
-  .name = "SendMutex"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -150,9 +141,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
-  /* Create the mutex(es) */
-  /* creation of SendMutex */
-  SendMutexHandle = osMutexNew(&SendMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -301,8 +289,8 @@ void BluetoothTask(void *argument)
 */
 typedef enum
 {
-  TURN_TOGGLE_LEFT = 0,
-  TURN_TOGGLE_MIDDLE = 1,
+  TURN_TOGGLE_MIDDLE = 0,
+  TURN_TOGGLE_LEFT = 1,
   TURN_TOGGLE_RIGHT = 2,
   TURN_TOGGLE_NONE = 4,
 } Trun_ToggleState;
@@ -312,7 +300,7 @@ typedef enum
 void SwtichTesk(void *argument)
 {
   /* USER CODE BEGIN SwtichTesk */
-  /* Infinite loop */
+  /* Infinite loop */\
   for(;;)
   {
     if(turnToggle_flag == 1)
