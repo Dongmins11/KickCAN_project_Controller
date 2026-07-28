@@ -195,24 +195,24 @@ void Bluetooth_ATProgress(void)
     HAL_UART_Transmit(&huart2, &data, 1, 100);
 }
 
-void Bluetooth_Receive(void)
-{
-    if(HAL_UART_Receive(&huart1, &pData, 1, 100) == HAL_OK)
-    {
-        if(pData == '\r' || pData == '\n')
-        {
-            HAL_UART_Transmit(&huart2, (uint8_t*)"\r\n", 2, 100);
-            HAL_UART_Transmit(&huart2, (uint8_t*)"RECEIVE: ", 9, 200);
-            HAL_UART_Transmit(&huart2, dataArr, arrIndex, 200);
-            arrIndex = 0;
-        }
-        else 
-        {
-            HAL_UART_Transmit(&huart2, &pData, 1, 200);
-            dataArr[arrIndex++] = pData;
-        }
-    }
-}
+// void Bluetooth_Receive(void)
+// {
+//     if(HAL_UART_Receive(&huart1, &pData, 1, 100) == HAL_OK)
+//     {
+//         if(pData == '\r' || pData == '\n')
+//         {
+//             HAL_UART_Transmit(&huart2, (uint8_t*)"\r\n", 2, 100);
+//             HAL_UART_Transmit(&huart2, (uint8_t*)"RECEIVE: ", 9, 200);
+//             HAL_UART_Transmit(&huart2, dataArr, arrIndex, 200);
+//             arrIndex = 0;
+//         }
+//         else 
+//         {
+//             HAL_UART_Transmit(&huart2, &pData, 1, 200);
+//             dataArr[arrIndex++] = pData;
+//         }
+//     }
+// }
 
 
 void Bluetooth_TestProgress(void)

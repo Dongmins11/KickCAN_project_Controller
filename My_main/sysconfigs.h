@@ -11,18 +11,26 @@
 
 // main (legacy)
 #include "main.h"
-#include "Switch.h"
-#include "Joystick.h"
-#include "RFID.h"
-#include "Bluetooth.h"
-#include "USART_Manager.h"
+// #include "Switch.h"
+// #include "Joystick.h"
+// #include "RFID.h"
+// #include "Bluetooth.h"
+// #include "USART_Manager.h"
 
-#include "sysconfig.h"
 #include "def.h"
-
 
 // new
 #include "my_uart.h"
 #include "my_spi.h"
 #include "my_adc.h"
+
+#include "Bt_Com.h"
+#include "HC05.h"
+
+#include "RFID_Com.h"
+#include "RC522.h"
+
+#include "Joystick.h"
+#include "ToggleSwitch.h"
+
 

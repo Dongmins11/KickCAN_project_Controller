@@ -1,8 +1,4 @@
 #include "Joystick.h"
-#include "Controller.h"
-#include "USART_Manager.h"
-#include "adc.h"
-#include "stm32f4xx_hal_uart.h"
 
 static EMA_FilterStruct pFilter_X = {0,};
 static EMA_FilterStruct pFilter_Y = {0,};
@@ -51,9 +47,6 @@ uint16_t Filter_JoystickValue(EMA_FilterStruct* filter, uint16_t input)
 }
 
 static  Protocol_DataFrame data = {};
-
-
-
 
 void Joystick_Progress()
 {

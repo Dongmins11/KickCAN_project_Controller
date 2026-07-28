@@ -2,15 +2,15 @@
 
 #include "sysconfigs.h"
 
-extern UART_HandleTypeDef huart1;
-
 #define MAX_DATA_INDEX (7)
 
 typedef struct 
 {
+    uint8_t start_byte;
     uint8_t protocal_Id;
     uint8_t command_Id;
     uint8_t data[MAX_DATA_INDEX];
+    uint8_t checkSum;
     uint8_t end;
 } Protocol_DataFrame;
 

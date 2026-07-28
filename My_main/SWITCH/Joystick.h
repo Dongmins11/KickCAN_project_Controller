@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Controller.h"
+#include "sysconfigs.h"
 
 extern ADC_HandleTypeDef hadc1;
 

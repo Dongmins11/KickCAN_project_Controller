@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "Controller.h"
+#include "sysconfigs.h"
 
 /* USER CODE END Includes */
 
@@ -54,6 +54,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == PA4_A2_KLAXON_Pin)
   {
+    // static uint8_t count1 = 0;
     static uint32_t last_exti_time = 0;
     uint32_t current_time = osKernelGetTickCount();
 
@@ -65,6 +66,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     // dataFrame.command_Id = C_HORN_SIGNAL;
     // Send_Data(dataFrame);
 
+    // printf("[%d] call \r\n", count1++);
     last_exti_time = current_time;
   }
 
@@ -77,6 +79,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       return; 
 
     turnToggle_flag = 1;
+
+    printf("left \r\n");
 
     last_exti_time = current_time;
   } 
@@ -221,7 +225,7 @@ void JoystickTask(void *argument)
     //   if(osKernelGetTickCount() - start_tick < 5)
     // previous_button = current_button;
 
-    osDelay(1);
+    osDelay(10);
   }
   /* USER CODE END JoystickTask */
 }
@@ -241,22 +245,9 @@ void RFIDTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    uint8_t tagType[2] = { 0,};
-    uint8_t serNum[5] = {0,};
+    RFID_Process();
 
-    if(RC522_Request(PICC_REQIDL, tagType) == MI_OK)
-    {
-       if(RC522_Anticoll(serNum) == MI_OK)
-       {
-         printf("Tag Type : 0x%02X%02X | UID : 0x%02X %02X %02X %02X %02X \r\n", 
-                tagType[0], tagType[1],
-                serNum[0], serNum[1], serNum[2], serNum[3], serNum[4]);
-
-        osDelay(500);
-       }
-    }
-
-    osDelay(1);
+    osDelay(100);
   }
   /* USER CODE END RFIDTask */
 }
@@ -274,7 +265,7 @@ void BluetoothTask(void *argument)
 
     for (;;)
     { 
-      Bluetooth_ATProgress();
+      // Bluetooth_ATProgress();
       // Bluetooth_TestProgress();
       osDelay(1);
     }
@@ -282,6 +273,7 @@ void BluetoothTask(void *argument)
 }
 
 /* USER CODE BEGIN Header_SwtichTesk */
+
 /**
 * @brief Function implementing the Swtich thread.
 * @param argument: Not used
@@ -289,8 +281,8 @@ void BluetoothTask(void *argument)
 */
 typedef enum
 {
-  TURN_TOGGLE_MIDDLE = 0,
-  TURN_TOGGLE_LEFT = 1,
+  TURN_TOGGLE_LEFT = 0,
+  TURN_TOGGLE_MIDDLE = 1,
   TURN_TOGGLE_RIGHT = 2,
   TURN_TOGGLE_NONE = 4,
 } Trun_ToggleState;

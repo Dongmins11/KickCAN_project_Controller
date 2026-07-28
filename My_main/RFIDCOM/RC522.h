@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Controller.h"
+#include "sysconfigs.h"
 
 /* ---- MFRC522 레지스터 주소 ---- */
 #define CommandReg      0x01

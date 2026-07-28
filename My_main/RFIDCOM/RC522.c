@@ -1,5 +1,4 @@
-#include "RFID.h"
-#include "main.h"
+#include "RC522.h"
 #include "cmsis_os.h"
 
 volatile uint8_t rc522IrqFlag;
