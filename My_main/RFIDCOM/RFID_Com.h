@@ -2,8 +2,6 @@
 
 #include "sysconfigs.h"
 
-
-
 typedef struct
 {
     uint8_t uid[4];

@@ -4,10 +4,11 @@ static EMA_FilterStruct pFilter_X = {0,};
 static EMA_FilterStruct pFilter_Y = {0,};
 volatile uint16_t Joystick_Value[JOYSTICK_DMA_LENGTH] = {0,0};
 
-void Joystick_Init()
-{
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)Joystick_Value, JOYSTICK_DMA_LENGTH);
-}
+
+// void Joystick_Init()
+// {
+//   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)Joystick_Value, JOYSTICK_DMA_LENGTH);
+// }
 
 
 void Clamp_JoystickValue()
@@ -50,8 +51,15 @@ static  Protocol_DataFrame data = {};
 
 void Joystick_Progress()
 {
-  Filter_JoystickValue(&pFilter_X, Joystick_Value[X]);
-  Filter_JoystickValue(&pFilter_Y, Joystick_Value[Y]);
+
+  uint16_t rawX = Joystick_Value[X];
+  uint16_t rawY = Joystick_Value[Y];
+
+  uint16_t filteredX = Filter_JoystickValue(&g_filterX, rawX);
+  uint16_t filteredY = Filter_JoystickValue(&g_filterY, rawY);
+
+  filteredX = Joystick_ClampValue(filteredX);
+  filteredY = Joystick_ClampValue(filteredY);
 
   Clamp_JoystickValue();
   

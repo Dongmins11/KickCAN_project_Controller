@@ -26,7 +26,7 @@ typedef enum
 } JOYSTICK_TYPE;
 
 
-void Joystick_Init();
+// void Joystick_Init();
 void Clamp_JoystickValue();
 uint16_t Filter_JoystickValue(EMA_FilterStruct* filter, uint16_t input);
 void Joystick_Progress();

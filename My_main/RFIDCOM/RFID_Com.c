@@ -35,19 +35,19 @@ static const RFID_AuthorizedCard* RFID_FindAuthorizedCard(const uint8_t* uid)
     return NULL;
 }
 
-static void RFID_Success(const RFID_AuthorizedCard* card)
-{
-    printf("RFID Authorized: %s\r\n", card->name);
+// static void RFID_Success(const RFID_AuthorizedCard* card)
+// {
+//     printf("RFID Authorized: %s\r\n", card->name);
 
-    HAL_GPIO_WritePin(PC0_A5_RELAY_GPIO_Port, PC0_A5_RELAY_Pin, GPIO_PIN_SET);
-}
+//     HAL_GPIO_WritePin(PC0_A5_RELAY_GPIO_Port, PC0_A5_RELAY_Pin, GPIO_PIN_SET);
+// }
 
-static void RFID_Failed(const uint8_t* uid)
-{
-    printf("RFID Failed UID: %02X %02X %02X %02X\r\n", uid[0], uid[1], uid[2], uid[3]);
+// static void RFID_Failed(const uint8_t* uid)
+// {
+//     printf("RFID Failed UID: %02X %02X %02X %02X\r\n", uid[0], uid[1], uid[2], uid[3]);
 
-    HAL_GPIO_WritePin(PC0_A5_RELAY_GPIO_Port, PC0_A5_RELAY_Pin, GPIO_PIN_RESET);
-}
+//     HAL_GPIO_WritePin(PC0_A5_RELAY_GPIO_Port, PC0_A5_RELAY_Pin, GPIO_PIN_RESET);
+// }
 
 
 void RFID_Process(void)
@@ -76,10 +76,10 @@ void RFID_Process(void)
 
         const RFID_AuthorizedCard* authorizedCard = RFID_FindAuthorizedCard(uid);
 
-        if(authorizedCard != NULL)
-            RFID_Success(authorizedCard);
+        if(card != NULL)
+            System_PostFlag(CONTROL_FLAG_RFID_AUTHORIZED);
         else
-            RFID_Failed(uid);
+            System_PostFlag(CONTROL_FLAG_RFID_UNKNOWN);
     }
     else
     {

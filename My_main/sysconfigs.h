@@ -32,5 +32,6 @@
 
 #include "Joystick.h"
 #include "ToggleSwitch.h"
+#include "TactSwitch.h"
 
 
