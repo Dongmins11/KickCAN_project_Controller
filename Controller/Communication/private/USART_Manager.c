@@ -1,4 +1,5 @@
 #include "USART_Manager.h"
+#include "cmsis_os2.h"
 #include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_uart.h"
 #include <stdint.h>
@@ -10,7 +11,7 @@ static uint8_t g_IsReceive = 0;
 
 extern UART_HandleTypeDef huart1;
 
-static volatile uint8_t copyData[10] = {0,};
+static volatile uint8_t copyData[12] = {0,};
 
 void Send_Data(Protocol_DataFrame _DataFrame)
 {
@@ -22,32 +23,43 @@ void Send_Data(Protocol_DataFrame _DataFrame)
     // uint8_t copyData[10] = {0,};
 
     // ADDR:0022:08:310F5C
-    memset(&copyData, 0, 10);
+    memset(&copyData, 0, sizeof(copyData));
     memcpy(copyData, &_DataFrame, sizeof(_DataFrame));
-    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)copyData, sizeof(copyData), 300);
-    memset(&copyData, 0, 10);
+    // HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)copyData, sizeof(copyData), 300);
 
-    if(status != HAL_OK)
+    for(int i =0; i < 10; ++i)
     {
-        const char* error_Msg = "[Send Error] Unknown Error\r\n";
-    
-        switch(status) 
-        {
-            case HAL_ERROR:   
-                error_Msg = "[Send Error] UART Hardware Error\r\n";
-                break;
-            case HAL_BUSY:    
-                error_Msg = "[Send Error] UART is Busy\r\n";
-                break;
-            case HAL_TIMEOUT:
-                error_Msg = "[Send Error] UART Timeout\r\n";
-                break;
-            default: 
-            break;
-        }
-
-        HAL_UART_Transmit(&huart2, (const uint8_t*)error_Msg, strlen(error_Msg) ,100);
+       copyData[10] ^= copyData[i];
     }
+
+    for(int i =0; i < sizeof(copyData); ++i)
+    {
+        HAL_UART_Transmit(&huart1, (uint8_t*)(copyData + i), 1, 300);
+        osDelay(1);
+    }
+    memset(&copyData, 0, sizeof(copyData));
+
+    // if(status != HAL_OK)
+    // {
+    //     const char* error_Msg = "[Send Error] Unknown Error\r\n";
+    
+    //     switch(status) 
+    //     {
+    //         case HAL_ERROR:   
+    //             error_Msg = "[Send Error] UART Hardware Error\r\n";
+    //             break;
+    //         case HAL_BUSY:    
+    //             error_Msg = "[Send Error] UART is Busy\r\n";
+    //             break;
+    //         case HAL_TIMEOUT:
+    //             error_Msg = "[Send Error] UART Timeout\r\n";
+    //             break;
+    //         default: 
+    //         break;
+    //     }
+
+    //     HAL_UART_Transmit(&huart2, (const uint8_t*)error_Msg, strlen(error_Msg) ,100);
+    // }
 
     g_IsSending = 0;
 }

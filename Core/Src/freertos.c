@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "sysconfig.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -179,13 +178,13 @@ void MX_FREERTOS_Init(void) {
   JoystickHandle = osThreadNew(JoystickTask, NULL, &Joystick_attributes);
 
   /* creation of RFID */
-  // RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
+  RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Swtich */
-  // SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
+  SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -234,7 +233,7 @@ void JoystickTask(void *argument)
     //   if(osKernelGetTickCount() - start_tick < 5)
     // previous_button = current_button;
 
-    osDelay(10);
+    osDelay(1);
   }
   /* USER CODE END JoystickTask */
 }
@@ -287,7 +286,7 @@ void BluetoothTask(void *argument)
 
     for (;;)
     { 
-      // Bluetooth_ATProgress();
+      Bluetooth_ATProgress();
       // Bluetooth_TestProgress();
       osDelay(1);
     }
