@@ -8,4 +8,10 @@ typedef struct
     char* name;
 } RFID_AuthorizedCard;
 
+typedef enum
+{
+    AUTH_UNLOCKED = 0,
+    AUTH_LOCKED = 1,
+} AUTH_TYPE;
+
 void RFID_Process();

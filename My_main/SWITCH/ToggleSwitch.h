@@ -1,6 +1,7 @@
 #pragma once
 
-#include "sysconfigs.h"
+#include <stdint.h>
+// #include "sysconfigs.h"
 
 typedef enum
 {
@@ -10,8 +11,8 @@ typedef enum
     TURN_TOGGLE_NONE = 4
 } Turn_ToggleState;
 
-volatile uint8_t g_turnToggle_flag = 0;
+typedef struct Protocol_DataFrame Protocol_DataFrame;
 
 
 void Toggle_SwitchInit(void);
-void Toggle_SwitchProgress(Protocol_DataFrame* outFrame);
+void Toggle_SwitchProgress(Protocol_DataFrame* _pOutFrame);

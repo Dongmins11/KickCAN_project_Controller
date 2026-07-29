@@ -1,6 +1,6 @@
-#include "System_Control.h"
-#include "Bt_Com.h"
-#include "def.h"
+#include "System_Manager.h"
+#include "cmsis_os2.h"
+#include "main.h"
 
 extern osThreadId_t ControlHandle;
 
@@ -18,7 +18,7 @@ static HAL_StatusTypeDef System_SendAuthorization(uint8_t authorized);
 void System_Init(void)
 {
     g_systemState = SYSTEM_LOCKED;
-    g_btLedTick = HAL_GetTick();
+    g_btLedTick = osKernelGetTickCount();
     g_btLedState = 0;
 
     System_SetBluetoothPower(0);
@@ -50,27 +50,26 @@ void System_HandleRfidAuthorized(void)
         return;
 
     g_systemState = SYSTEM_WAIT_BT;
-    g_btLedTick = HAL_GetTick();
-    g_btLedState = 0U;
+    g_btLedTick = osKernelGetTickCount();
+    g_btLedState = 0;
 
-    System_SetBluetoothPower(1U);
-    System_SetRgb(0U, 1U, 0U);
-    System_SetBluetoothLed(0U);
+    System_SetBluetoothPower(1);
+    System_SetRgb(0, 1, 0);
+    System_SetBluetoothLed(0);
 }
 
 void System_HandleRfidUnknown(void)
 {
     SystemState previousState = g_systemState;
 
-    if(previousState == SYSTEM_LOCKED || previousState == SYSTEM_LOCKING)
+    if(previousState == SYSTEM_LOCKED || previousState == SYSTEM_LOCKING || previousState == SYSTEM_WAIT_BT)
         return;
 
     /* 먼저 상태를 바꿔 조이스틱과 스위치 송신을 즉시 차단한다. */
     g_systemState = SYSTEM_LOCKING;
 
     /* 연결된 상태에서만 RC카에 잠금 명령을 한 번 보낸다. */
-    if(previousState == SYSTEM_ACTIVE &&
-       System_IsBluetoothConnected())
+    if(previousState == SYSTEM_ACTIVE && System_IsBluetoothConnected())
     {
         System_SendAuthorization(AUTH_LOCKED);
     }
@@ -99,12 +98,23 @@ uint8_t System_HandleBluetoothStateChanged(void)
     if(g_systemState == SYSTEM_ACTIVE)
     {
         g_systemState = SYSTEM_WAIT_BT;
-        g_btLedTick = HAL_GetTick();
+        g_btLedTick = osKernelGetTickCount();
         g_btLedState = 0;
         System_SetBluetoothLed(0);
     }
 
     return 0;
+}
+
+void Control_SendCurrentToggle(void)
+{
+    Protocol_DataFrame frame = {0};
+
+    Toggle_SwitchInit();
+    Toggle_SwitchProgress(&frame);
+
+    if(frame.protocal_Id != 0)
+        Send_SwitchDataFrame(&frame);
 }
 
 void System_LedProgress(uint32_t now)
@@ -144,7 +154,7 @@ void System_LedProgress(uint32_t now)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if(GPIO_Pin == BT_STATE_Pin)
+    if(GPIO_Pin == PB5_D4_BSTATE_Pin)
     {
         System_PostFlag(CONTROL_FLAG_BT_STATE_CHANGED);
         return;
@@ -156,58 +166,32 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         return;
     }
 
-    if(GPIO_Pin == PB0_A3_TurnL_Pin ||
-       GPIO_Pin == PC1_A4_TurnR_Pin)
-    {
+    if(GPIO_Pin == PB0_A3_TurnL_Pin || GPIO_Pin == PC1_A4_TurnR_Pin)
         System_PostFlag(CONTROL_FLAG_TOGGLE_SWITCH);
-    }
 }
 
 static void System_SetBluetoothPower(uint8_t powerOn)
 {
-    HAL_GPIO_WritePin(
-        PC0_A5_RELAY_GPIO_Port,
-        PC0_A5_RELAY_Pin,
-        powerOn ? GPIO_PIN_SET : GPIO_PIN_RESET
-    );
+    HAL_GPIO_WritePin(PC0_A5_RELAY_GPIO_Port, PC0_A5_RELAY_Pin, powerOn ? GPIO_PIN_SET : GPIO_PIN_RESET);
+
+
 }
 
 static uint8_t System_IsBluetoothConnected(void)
 {
-    return HAL_GPIO_ReadPin(
-        BT_STATE_GPIO_Port,
-        BT_STATE_Pin
-    ) == GPIO_PIN_SET;
+    return HAL_GPIO_ReadPin(PB5_D4_BSTATE_GPIO_Port, PB5_D4_BSTATE_Pin) == GPIO_PIN_SET;
 }
 
 static void System_SetRgb(uint8_t redOn, uint8_t greenOn, uint8_t blueOn)
 {
-    HAL_GPIO_WritePin(
-        RGB_R_GPIO_Port,
-        RGB_R_Pin,
-        redOn ? GPIO_PIN_SET : GPIO_PIN_RESET
-    );
+    HAL_GPIO_WritePin(PC8_LEDR_GPIO_Port, PC8_LEDR_Pin, redOn ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
-    HAL_GPIO_WritePin(
-        RGB_G_GPIO_Port,
-        RGB_G_Pin,
-        greenOn ? GPIO_PIN_SET : GPIO_PIN_RESET
-    );
-
-    HAL_GPIO_WritePin(
-        RGB_B_GPIO_Port,
-        RGB_B_Pin,
-        blueOn ? GPIO_PIN_SET : GPIO_PIN_RESET
-    );
+    HAL_GPIO_WritePin(PC6_LEDG_GPIO_Port, PC6_LEDG_Pin, greenOn ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 static void System_SetBluetoothLed(uint8_t ledOn)
 {
-    HAL_GPIO_WritePin(
-        BT_LED_GPIO_Port,
-        BT_LED_Pin,
-        ledOn ? GPIO_PIN_SET : GPIO_PIN_RESET
-    );
+    HAL_GPIO_WritePin(PC5_LEDB_GPIO_Port, PC5_LEDB_Pin, ledOn ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 static void System_EnterLocked(void)

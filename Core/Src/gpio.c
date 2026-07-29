@@ -51,7 +51,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(PC0_A5_RELAY_GPIO_Port, PC0_A5_RELAY_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, PC0_A5_RELAY_Pin|PC5_LEDB_Pin|PC6_LEDG_Pin|PC8_LEDR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(PB10_D6_BEN_GPIO_Port, PB10_D6_BEN_Pin, GPIO_PIN_SET);
@@ -68,8 +68,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC0_A5_RELAY_Pin PC7_D9_RFRST_Pin */
-  GPIO_InitStruct.Pin = PC0_A5_RELAY_Pin|PC7_D9_RFRST_Pin;
+  /*Configure GPIO pins : PC0_A5_RELAY_Pin PC5_LEDB_Pin PC6_LEDG_Pin PC7_D9_RFRST_Pin
+                           PC8_LEDR_Pin */
+  GPIO_InitStruct.Pin = PC0_A5_RELAY_Pin|PC5_LEDB_Pin|PC6_LEDG_Pin|PC7_D9_RFRST_Pin
+                          |PC8_LEDR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -87,11 +89,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(PA4_A2_KLAXON_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB0_A3_TurnL_Pin */
-  GPIO_InitStruct.Pin = PB0_A3_TurnL_Pin;
+  /*Configure GPIO pins : PB0_A3_TurnL_Pin PB5_D4_BSTATE_Pin */
+  GPIO_InitStruct.Pin = PB0_A3_TurnL_Pin|PB5_D4_BSTATE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(PB0_A3_TurnL_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB10_D6_BEN_Pin */
   GPIO_InitStruct.Pin = PB10_D6_BEN_Pin;

@@ -76,12 +76,17 @@ const osThreadAttr_t Bluetooth_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for Swtich */
-osThreadId_t SwtichHandle;
-const osThreadAttr_t Swtich_attributes = {
-  .name = "Swtich",
+/* Definitions for Control */
+osThreadId_t ControlHandle;
+const osThreadAttr_t Control_attributes = {
+  .name = "Control",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for UART_MUTEX */
+osMutexId_t UART_MUTEXHandle;
+const osMutexAttr_t UART_MUTEX_attributes = {
+  .name = "UART_MUTEX"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,7 +98,7 @@ void StartDefaultTask(void *argument);
 void JoystickTask(void *argument);
 void RFIDTask(void *argument);
 void BluetoothTask(void *argument);
-void SwtichTesk(void *argument);
+void ControlTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -108,6 +113,9 @@ void MX_FREERTOS_Init(void) {
   My_SPI_Init();
   My_UART_Init();
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* creation of UART_MUTEX */
+  UART_MUTEXHandle = osMutexNew(&UART_MUTEX_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -136,10 +144,10 @@ void MX_FREERTOS_Init(void) {
   RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
-  /* creation of Swtich */
-  SwtichHandle = osThreadNew(SwtichTesk, NULL, &Swtich_attributes);
+  /* creation of Control */
+  ControlHandle = osThreadNew(ControlTask, NULL, &Control_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -176,17 +184,13 @@ void StartDefaultTask(void *argument)
 void JoystickTask(void *argument)
 {
   /* USER CODE BEGIN JoystickTask */
-  
-  Joystick_Init();
 
   /* Infinite loop */
   for(;;)
   {
-      Joystick_Progress();
 
-    //  uint32_t start_tick = osKernelGetTickCount();
-    //   if(osKernelGetTickCount() - start_tick < 5)
-    // previous_button = current_button;
+    if(System_CanControl())
+      Joystick_Progress();
 
     osDelay(10);
   }
@@ -235,191 +239,117 @@ void BluetoothTask(void *argument)
   /* USER CODE END BluetoothTask */
 }
 
-/* USER CODE BEGIN Header_SwtichTesk */
-
+/* USER CODE BEGIN Header_ControlTask */
 /**
-* @brief Function implementing the Swtich thread.
+* @brief Function implementing the Control thread.
 * @param argument: Not used
 * @retval None
 */
-typedef enum
+/* USER CODE END Header_ControlTask */
+void ControlTask(void *argument)
 {
-  TURN_TOGGLE_LEFT = 0,
-  TURN_TOGGLE_MIDDLE = 1,
-  TURN_TOGGLE_RIGHT = 2,
-  TURN_TOGGLE_NONE = 4,
-} Trun_ToggleState;
-
-
-/* USER CODE END Header_SwtichTesk */
-void SwtichTesk(void *argument)
-{
+  /* USER CODE BEGIN ControlTask */
+  /* Infinite loop */
   /* USER CODE BEGIN SwtichTesk */
-  Protocol_DataFrame dataFrame_Toggle = {0,};
-  Protocol_DataFrame dataFrame_Tact = {0,};
+  uint32_t lastLedTick = 0;
 
-  /* Infinite loop */\
+  uint32_t tactDebounceTick = 0;
+  uint32_t toggleDebounceTick = 0;
+
+  uint8_t tactPending_flag = 0;
+  uint8_t togglePending_flag = 0;
+
+  /* Infinite loop */
+  Toggle_SwitchInit();
+  System_Init();
+
   for(;;)
   {
-    Toggle_SwitchProgress(&dataFrame_Toggle);
-  
-    if(dataFrame_Toggle.protocal_Id != 0)
-      Send_Data(dataFrame_Toggle);
+    uint32_t now;
+    uint32_t flags;
+
+    now = osKernelGetTickCount();
+
+    flags = osThreadFlagsWait(CONTROL_FLAG_ALL, osFlagsWaitAny, 1);
+
+    if((flags & osFlagsError) == 0)
+    {
+
+      if(flags & CONTROL_FLAG_RFID_AUTHORIZED)
+          System_HandleRfidAuthorized();
+
+          
+      if(flags & CONTROL_FLAG_RFID_UNKNOWN)
+          System_HandleRfidUnknown();
 
 
-    Tact_SwitchProgress(&dataFrame_Tact);
+      if(flags & CONTROL_FLAG_BT_STATE_CHANGED)
+      {
+          uint8_t activated = System_HandleBluetoothStateChanged();
 
-    if(dataFrame_Tact.protocal_Id != 0)
-      Send_Data(dataFrame_Tact);
+          if(activated)
+              Control_SendCurrentToggle();
+      }
 
-    osDelay(10);
+      if(flags & CONTROL_FLAG_TACT_SWITCH)
+      {
+          tactPending_flag = 1;
+          tactDebounceTick = now;
+      }
+
+      if(flags & CONTROL_FLAG_TOGGLE_SWITCH)
+      {
+          togglePending_flag = 1;
+          toggleDebounceTick = now;
+      }
+    }
+
+    now = osKernelGetTickCount();
+
+    if(tactPending_flag && (now - tactDebounceTick) >= TACT_DEBOUNCE_MS)
+    {
+      Protocol_DataFrame frame = {0};
+
+      tactPending_flag = 0;
+
+      if(System_CanControl())
+      {
+          Tact_SwitchProgress(&frame);
+
+          if(frame.protocal_Id != 0)
+              Send_SwitchDataFrame(&frame);
+      }
+    }
+
+    if(togglePending_flag && (now - toggleDebounceTick) >= TOGGLE_DEBOUNCE_MS)
+    {
+        Protocol_DataFrame frame = {0};
+
+        togglePending_flag = 0;
+
+        if(System_CanControl())
+        {
+            Toggle_SwitchProgress(&frame);
+
+            if(frame.protocal_Id != 0)
+                Send_SwitchDataFrame(&frame);
+        }
+      }
+
+      /* LED 로직 함수에는 반복문이 없고 여기서 100ms마다 호출한다. */
+      if((now - lastLedTick) >= LED_UPDATE_PERIOD_MS)
+      {
+          lastLedTick = now;
+          System_LedProgress(now);
+      }
+
+
+    osDelay(1);
   }
-  /* USER CODE END SwtichTesk */
+  /* USER CODE END ControlTask */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-// void ControlTask(void* argument)
-// {
-//     uint32_t lastJoystickTick;
-//     uint32_t lastLedTick;
-
-//     uint32_t tactDebounceTick = 0U;
-//     uint32_t toggleDebounceTick = 0U;
-
-//     uint8_t tactPending = 0U;
-//     uint8_t togglePending = 0U;
-
-//     (void)argument;
-
-//     Joystick_Init();
-//     Toggle_SwitchInit();
-//     System_Init();
-
-//     lastJoystickTick = osKernelGetTickCount();
-//     lastLedTick = lastJoystickTick;
-
-//     for(;;)
-//     {
-//         uint32_t now;
-//         uint32_t flags;
-
-//         /*
-//          * 인터럽트/RFID 이벤트가 있으면 즉시 깨어나고,
-//          * 이벤트가 없어도 최대 1ms 뒤 조이스틱과 LED를 처리한다.
-//          */
-//         flags = osThreadFlagsWait(
-//             CONTROL_FLAG_ALL,
-//             osFlagsWaitAny,
-//             1U
-//         );
-
-//         now = osKernelGetTickCount();
-
-//         if((flags & osFlagsError) == 0U)
-//         {
-//             if(flags & CONTROL_FLAG_RFID_AUTHORIZED)
-//                 System_HandleRfidAuthorized();
-
-//             if(flags & CONTROL_FLAG_RFID_UNKNOWN)
-//                 System_HandleRfidUnknown();
-
-//             if(flags & CONTROL_FLAG_BT_STATE_CHANGED)
-//             {
-//                 uint8_t activated =
-//                     System_HandleBluetoothStateChanged();
-
-//                 /* 연결 직후 현재 토글 위치를 한 번 전송한다. */
-//                 if(activated)
-//                     Control_SendCurrentToggle();
-//             }
-
-//             if(flags & CONTROL_FLAG_TACT_SWITCH)
-//             {
-//                 tactPending = 1U;
-//                 tactDebounceTick = now;
-//             }
-
-//             if(flags & CONTROL_FLAG_TOGGLE_SWITCH)
-//             {
-//                 /*
-//                  * 좌/우 핀에서 연속 엣지가 들어오면 마지막 엣지를 기준으로
-//                  * 디바운싱 시간을 다시 시작한다.
-//                  */
-//                 togglePending = 1U;
-//                 toggleDebounceTick = now;
-//             }
-//         }
-
-//         now = osKernelGetTickCount();
-
-//         /* 조이스틱은 연속 값이므로 20ms 주기 폴링한다. */
-//         if((now - lastJoystickTick) >= JOYSTICK_PERIOD_MS)
-//         {
-//             lastJoystickTick = now;
-
-//             if(System_CanControl())
-//                 Joystick_Progress();
-//         }
-
-//         /* 택트 스위치는 EXTI 발생 후 20ms 뒤 실제 핀을 읽는다. */
-//         if(tactPending &&
-//            (now - tactDebounceTick) >= TACT_DEBOUNCE_MS)
-//         {
-//             Protocol_DataFrame frame = {0};
-
-//             tactPending = 0U;
-
-//             if(System_CanControl())
-//             {
-//                 Tact_SwitchProgress(&frame);
-
-//                 if(frame.protocal_Id != 0U)
-//                     Send_Data(&frame);
-//             }
-//         }
-
-//         /*
-//          * 3단 토글도 EXTI 기반이다.
-//          * 마지막 Rising/Falling 엣지 후 20ms 뒤 좌/우 핀을 함께 읽어
-//          * LEFT / MIDDLE / RIGHT를 확정한다.
-//          */
-//         if(togglePending &&
-//            (now - toggleDebounceTick) >= TOGGLE_DEBOUNCE_MS)
-//         {
-//             Protocol_DataFrame frame = {0};
-
-//             togglePending = 0U;
-
-//             if(System_CanControl())
-//             {
-//                 Toggle_SwitchProgress(&frame);
-
-//                 if(frame.protocal_Id != 0U)
-//                     Send_Data(&frame);
-//             }
-//         }
-
-//         /* LED 로직 함수에는 반복문이 없고 여기서 100ms마다 호출한다. */
-//         if((now - lastLedTick) >= LED_UPDATE_PERIOD_MS)
-//         {
-//             lastLedTick = now;
-//             System_LedProgress(now);
-//         }
-//     }
-// }
-
-// void RFIDTask(void* argument)
-// {
-//     (void)argument;
-
-//     RC522_Init();
-
-//     for(;;)
-//     {
-//         RFID_Process();
-//         osDelay(100U);
-//     }
-// }
 /* USER CODE END Application */
 

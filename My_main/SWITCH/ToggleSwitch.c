@@ -1,6 +1,8 @@
 #include "ToggleSwitch.h"
-#include "main.h"
-#include "def.h"
+
+#include "Bt_Com.h"
+#include "stm32f4xx_hal_gpio.h"
+
 
 static Turn_ToggleState g_previousState = TURN_TOGGLE_NONE;
 
@@ -13,14 +15,18 @@ static Turn_ToggleState Toggle_ReadState(void)
 
     rightState = HAL_GPIO_ReadPin(PC1_A4_TurnR_GPIO_Port, PC1_A4_TurnR_Pin);
 
-    if(leftState == GPIO_PIN_SET && rightState != GPIO_PIN_SET)
+    if(leftState == GPIO_PIN_SET && rightState == GPIO_PIN_RESET)
         return TURN_TOGGLE_LEFT;
 
-    if(rightState == GPIO_PIN_SET && leftState != GPIO_PIN_SET)
+    if(leftState == GPIO_PIN_RESET && rightState == GPIO_PIN_SET)
         return TURN_TOGGLE_RIGHT;
 
-    return TURN_TOGGLE_MIDDLE;
+    if(leftState == GPIO_PIN_SET && rightState == GPIO_PIN_SET)
+        return TURN_TOGGLE_MIDDLE;
+
+    return TURN_TOGGLE_NONE;
 }
+
 
 void Toggle_SwitchInit(void)
 {
@@ -30,8 +36,7 @@ void Toggle_SwitchInit(void)
 void Toggle_SwitchProgress(Protocol_DataFrame* _pOutFrame)
 {
     Turn_ToggleState currentState;
-
-    if(outFrame == NULL)
+    if(_pOutFrame == NULL)
         return;
 
     currentState = Toggle_ReadState();

@@ -76,7 +76,7 @@ void RFID_Process(void)
 
         const RFID_AuthorizedCard* authorizedCard = RFID_FindAuthorizedCard(uid);
 
-        if(card != NULL)
+        if(authorizedCard != NULL)
             System_PostFlag(CONTROL_FLAG_RFID_AUTHORIZED);
         else
             System_PostFlag(CONTROL_FLAG_RFID_UNKNOWN);

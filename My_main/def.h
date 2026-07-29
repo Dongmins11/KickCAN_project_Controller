@@ -8,3 +8,7 @@
 #define C_STEERING_CONTROL (11)
 #define C_HORN_SIGNAL (12)
 #define C_TURN_SIGNAL (13)
+
+#define TACT_DEBOUNCE_MS (100)
+#define TOGGLE_DEBOUNCE_MS (100)
+#define LED_UPDATE_PERIOD_MS (100)

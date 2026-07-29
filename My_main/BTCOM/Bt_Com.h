@@ -6,7 +6,7 @@
 #define PROTOCOL_START_BYTE     (0xAA)
 #define PROTOCOL_END_BYTE       (0xFF)
 
-typedef struct 
+typedef struct Protocol_DataFrame
 {
     uint8_t start_byte;
     uint8_t protocal_Id;
@@ -23,6 +23,11 @@ typedef enum
     SEND_ENABLE = 1,
 } SEND_STATE;
 
+
+HAL_StatusTypeDef Send_DataFrame(const Protocol_DataFrame* dataFrame);
+HAL_StatusTypeDef Send_SwitchDataFrame(const Protocol_DataFrame* dataFrame);
+HAL_StatusTypeDef Send_SystemData(const Protocol_DataFrame* dataFrame);
+HAL_StatusTypeDef Receive_DataFrame(Protocol_DataFrame* outDataFrame);
 
 
 void Send_Data(Protocol_DataFrame _DataFrame);

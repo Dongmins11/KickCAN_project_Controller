@@ -1,7 +1,8 @@
 #include "Joystick.h"
+#include "Bt_Com.h"
 
-static EMA_FilterStruct pFilter_X = {0,};
-static EMA_FilterStruct pFilter_Y = {0,};
+static EMA_FilterStruct g_pFilter_X = {0,};
+static EMA_FilterStruct g_pFilter_Y = {0,};
 volatile uint16_t Joystick_Value[JOYSTICK_DMA_LENGTH] = {0,0};
 
 
@@ -27,6 +28,16 @@ void Clamp_JoystickValue()
     //1000초과 1023으로 떄림
 }
 
+static uint16_t Joystick_ClampValue(uint16_t _FilterValue)
+{
+  if(MAX_VALUE_CHECK < _FilterValue)
+      return MAX_VALUE;
+  else if(MIN_VALUE_CHECK > _FilterValue)
+      return MIN_VALUE;
+
+    return _FilterValue;
+}
+
 
 uint16_t Filter_JoystickValue(EMA_FilterStruct* filter, uint16_t input)
 {
@@ -47,35 +58,33 @@ uint16_t Filter_JoystickValue(EMA_FilterStruct* filter, uint16_t input)
     return (uint16_t)(filter->value / scale);
 }
 
-static  Protocol_DataFrame data = {};
 
 void Joystick_Progress()
 {
+  Protocol_DataFrame data = {};
 
   uint16_t rawX = Joystick_Value[X];
   uint16_t rawY = Joystick_Value[Y];
 
-  uint16_t filteredX = Filter_JoystickValue(&g_filterX, rawX);
-  uint16_t filteredY = Filter_JoystickValue(&g_filterY, rawY);
+  uint16_t filteredX = Filter_JoystickValue(&g_pFilter_X, rawX);
+  uint16_t filteredY = Filter_JoystickValue(&g_pFilter_Y, rawY);
 
   filteredX = Joystick_ClampValue(filteredX);
   filteredY = Joystick_ClampValue(filteredY);
 
-  Clamp_JoystickValue();
+  // Clamp_JoystickValue();
   
-  data.start_byte = 0xAA;
   data.protocal_Id = PROTOCOL_ID_MAIN;
   data.command_Id = C_STEERING_CONTROL;
-  data.data[0] = (uint8_t)((Joystick_Value[Y] >> 8) & 0xFF);
-  data.data[1] = (uint8_t)(Joystick_Value[Y] & 0xFF);
+  data.data[0] = (uint8_t)((filteredY >> 8) & 0xFF);
+  data.data[1] = (uint8_t)(filteredY & 0xFF);
 
-  data.data[2] = (uint8_t)((Joystick_Value[X] >> 8) & 0xFF);
-  data.data[3] = (uint8_t)(Joystick_Value[X] & 0xFF);
-  data.end = 0xFF;
+  data.data[2] = (uint8_t)((filteredX >> 8) & 0xFF);
+  data.data[3] = (uint8_t)(filteredX & 0xFF);
 
   // 테스트로 UART 데이터 송신
   // printf("X : [%u] \r\n Y : %u \r\n", Joystick_Value[X], Joystick_Value[Y]);
-  Send_Data(data);
+  Send_DataFrame(&data);
 }
 
 

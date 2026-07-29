@@ -1,7 +1,7 @@
 #include "RC522.h"
 #include "cmsis_os.h"
 
-volatile uint8_t rc522IrqFlag;
+// volatile uint8_t rc522IrqFlag;
 extern SPI_HandleTypeDef hspi1;
 /* ---------------------------------------------------------------
  * SPI 저수준 함수
@@ -98,8 +98,7 @@ void RC522_Init(void)
  * FIFO에 커맨드 데이터를 넣고 실행 -> IRQ로 완료/타임아웃 대기
  * (CommIrqReg를 SPI로 반복 폴링하지 않고 EXTI 인터럽트로 대기)
  * --------------------------------------------------------------- */
-uint8_t RC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen,
-                             uint8_t *backData, uint16_t *backLen)
+uint8_t RC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint16_t *backLen)
 {
     uint8_t status = MI_ERR;
     uint8_t n;
@@ -126,24 +125,33 @@ uint8_t RC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen,
     }
 
     uint32_t startTick = HAL_GetTick();
-    rc522IrqFlag = 0;
+    // rc522IrqFlag = 0;
     uint8_t irqVal = 0;
     while (1)
     {
+        // irqVal = RC522_ReadReg(ComIrqReg);
+        // if (rc522IrqFlag || (irqVal & waitIRq) || (irqVal & 0x01))   /* 0x01 = TimerIRq */
+        // {
+        //     break;
+        // }
+        // if ((HAL_GetTick() - startTick) > 25)   /* 25ms 타임아웃 */
+        // {
+        //     break;
+        // }
+
         irqVal = RC522_ReadReg(ComIrqReg);
-        if (rc522IrqFlag || (irqVal & waitIRq) || (irqVal & 0x01))   /* 0x01 = TimerIRq */
-        {
+
+        if((irqVal & waitIRq) || (irqVal & 0x01))
             break;
-        }
-        if ((HAL_GetTick() - startTick) > 25)   /* 25ms 타임아웃 */
-        {
+
+        if((HAL_GetTick() - startTick) > 25)
             break;
-        }
     }
 
     RC522_ClearBitMask(BitFramingReg, 0x80);
 
-    if (rc522IrqFlag || (irqVal & waitIRq))
+    // if (rc522IrqFlag || (irqVal & waitIRq))
+    if (irqVal & waitIRq)
     {
         uint8_t errorReg = RC522_ReadReg(ErrorReg);
         if ((errorReg & 0x1B) == 0x00)   /* BufferOvfl, CollErr, CRCErr, ProtocolErr 없음 */
