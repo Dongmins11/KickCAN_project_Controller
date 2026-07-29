@@ -46,7 +46,7 @@ void Toggle_SwitchProgress(Protocol_DataFrame* _pOutFrame)
 
     g_previousState = currentState;
 
-    _pOutFrame->protocal_Id = PROTOCOL_ID_MAIN;
+    _pOutFrame->protocal_Id = PROTOCOL_ID_NODE_2;
     _pOutFrame->command_Id = C_TURN_SIGNAL;
     _pOutFrame->data[0] = (uint8_t)currentState;
 }

@@ -16,6 +16,11 @@ typedef struct Protocol_DataFrame
     uint8_t end;
 } Protocol_DataFrame;
 
+typedef enum
+{
+    COMMAND = 0,
+    SYSTEM = 1,
+} MESSAGE_DATA_TYPE;
 
 typedef enum
 {
@@ -25,11 +30,11 @@ typedef enum
 
 
 HAL_StatusTypeDef Send_DataFrame(const Protocol_DataFrame* dataFrame);
-HAL_StatusTypeDef Send_SwitchDataFrame(const Protocol_DataFrame* dataFrame);
-HAL_StatusTypeDef Send_SystemData(const Protocol_DataFrame* dataFrame);
+HAL_StatusTypeDef Send_MultipleDataFrame(const Protocol_DataFrame* dataFrame, MESSAGE_DATA_TYPE messageType);
 HAL_StatusTypeDef Receive_DataFrame(Protocol_DataFrame* outDataFrame);
 
 
+// legecy 일단 냅둬 ㅋㅋ슨
 void Send_Data(Protocol_DataFrame _DataFrame);
 void Send_Data_Ten(Protocol_DataFrame _DataFrame);
 void Receive_Data(Protocol_DataFrame* _OutDataFrame);

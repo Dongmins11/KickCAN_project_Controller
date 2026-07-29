@@ -39,6 +39,12 @@ static HAL_StatusTypeDef Bluetooth_Transmit(const Protocol_DataFrame* source)
     if(osMutexAcquire(UART_MUTEXHandle, 100) != osOK)
         return HAL_BUSY;
 
+    if(!System_CanControl())
+    {
+        osMutexRelease(UART_MUTEXHandle);
+        return HAL_BUSY;
+    }
+
     frame = *source;
     Data_Wrapper(&frame);
 
@@ -60,7 +66,7 @@ HAL_StatusTypeDef Send_DataFrame(const Protocol_DataFrame* dataFrame)
     return Bluetooth_Transmit(dataFrame);
 }
 
-HAL_StatusTypeDef Send_SwitchDataFrame(const Protocol_DataFrame* dataFrame)
+HAL_StatusTypeDef Send_MultipleDataFrame(const Protocol_DataFrame* dataFrame, MESSAGE_DATA_TYPE messageType)
 {
     Protocol_DataFrame frame;
     HAL_StatusTypeDef status = HAL_OK;
@@ -68,7 +74,8 @@ HAL_StatusTypeDef Send_SwitchDataFrame(const Protocol_DataFrame* dataFrame)
     if(dataFrame == NULL)
         return HAL_ERROR;
 
-    if(!System_CanControl())
+    
+    if(COMMAND == messageType && !System_CanControl())
         return HAL_BUSY;
 
     if(osMutexAcquire(UART_MUTEXHandle, 100) != osOK)
@@ -79,6 +86,12 @@ HAL_StatusTypeDef Send_SwitchDataFrame(const Protocol_DataFrame* dataFrame)
 
     for(uint8_t i = 0; i < SWITCH_SEND_REPEAT_COUNT; i++)
     {
+        if(messageType == COMMAND && !System_CanControl())
+        {
+            status = HAL_BUSY;
+            break;
+        }
+
         status = HAL_UART_Transmit(&huart1, (uint8_t*)&frame, sizeof(frame), 100);
 
         if(status != HAL_OK)
@@ -92,10 +105,6 @@ HAL_StatusTypeDef Send_SwitchDataFrame(const Protocol_DataFrame* dataFrame)
     return status;
 }
 
-HAL_StatusTypeDef Send_SystemData(const Protocol_DataFrame* dataFrame)
-{
-    return Bluetooth_Transmit(dataFrame);
-}
 
 HAL_StatusTypeDef Receive_DataFrame(Protocol_DataFrame* outDataFrame)
 {

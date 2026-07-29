@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
+#include "Bt_Com.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -317,7 +318,7 @@ void ControlTask(void *argument)
           Tact_SwitchProgress(&frame);
 
           if(frame.protocal_Id != 0)
-              Send_SwitchDataFrame(&frame);
+              Send_MultipleDataFrame(&frame, COMMAND);
       }
     }
 
@@ -332,7 +333,7 @@ void ControlTask(void *argument)
             Toggle_SwitchProgress(&frame);
 
             if(frame.protocal_Id != 0)
-                Send_SwitchDataFrame(&frame);
+                Send_MultipleDataFrame(&frame, COMMAND);
         }
       }
 

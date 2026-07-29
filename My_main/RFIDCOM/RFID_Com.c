@@ -17,7 +17,8 @@ static uint32_t g_rfid_check_tick = 0;
 static const RFID_AuthorizedCard g_authorized_cards[] =
 {
     { { 0xA2, 0xD2, 0x13, 0x07 }, "DongMin" },
-    { { 0xFF, 0xFF, 0xFF, 0xFF }, "Admin"  }
+    { { 0xFF, 0xFF, 0xFF, 0xFF }, "Admin"  },
+    { { 0x91, 0xCD, 0x33, 0x07 }, "DongMin_2"  },
 };
 
 
@@ -76,10 +77,16 @@ void RFID_Process(void)
 
         const RFID_AuthorizedCard* authorizedCard = RFID_FindAuthorizedCard(uid);
 
+        
         if(authorizedCard != NULL)
+        {
             System_PostFlag(CONTROL_FLAG_RFID_AUTHORIZED);
+        }
         else
+        {
+            System_RequestAuthFailure();
             System_PostFlag(CONTROL_FLAG_RFID_UNKNOWN);
+        }
     }
     else
     {

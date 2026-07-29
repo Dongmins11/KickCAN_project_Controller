@@ -11,7 +11,7 @@ void Tact_SwitchProgress(Protocol_DataFrame* _pOutFrame)
 
     hornState = HAL_GPIO_ReadPin(PA4_A2_KLAXON_GPIO_Port, PA4_A2_KLAXON_Pin);
 
-    _pOutFrame->protocal_Id = PROTOCOL_ID_MAIN;
+    _pOutFrame->protocal_Id = PROTOCOL_ID_NODE_2;
     _pOutFrame->command_Id = C_HORN_SIGNAL;
     _pOutFrame->data[0] = hornState == GPIO_PIN_RESET ? 1 : 0;
 }

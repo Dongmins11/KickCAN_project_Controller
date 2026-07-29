@@ -20,7 +20,7 @@ typedef enum
     SYSTEM_LOCKED = 0,
     SYSTEM_WAIT_BT,
     SYSTEM_ACTIVE,
-    SYSTEM_LOCKING
+    SYSTEM_AUTH_FAILED,
 } SystemState;
 
 void System_Init(void);
@@ -31,6 +31,9 @@ void System_HandleRfidUnknown(void);
 uint8_t System_HandleBluetoothStateChanged(void);
 void System_LedProgress(uint32_t now);
 
-void Control_SendCurrentToggle(void);
 uint8_t System_CanControl(void);
+void Control_SendCurrentToggle(void);
+
+void System_BlockControlTx(void);
+void System_RequestAuthFailure(void);
 SystemState System_GetState(void);
