@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "Bt_Com.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -67,7 +66,7 @@ const osThreadAttr_t Joystick_attributes = {
 osThreadId_t RFIDHandle;
 const osThreadAttr_t RFID_attributes = {
   .name = "RFID",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for Bluetooth */
@@ -145,7 +144,7 @@ void MX_FREERTOS_Init(void) {
   RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Control */
   ControlHandle = osThreadNew(ControlTask, NULL, &Control_attributes);
@@ -233,7 +232,7 @@ void BluetoothTask(void *argument)
 
     for (;;)
     { 
-      // Bluetooth_ATProgress();
+      Bluetooth_ATProgress();
       // Bluetooth_TestProgress();
       osDelay(1);
     }
