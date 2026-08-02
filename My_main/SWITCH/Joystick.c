@@ -1,5 +1,8 @@
 #include "Joystick.h"
 #include "Bt_Com.h"
+#include <math.h>
+
+#define JOYSTICK_MAX_VALUE (1023)
 
 static EMA_FilterStruct g_pFilter_X = {0,};
 static EMA_FilterStruct g_pFilter_Y = {0,};
@@ -58,33 +61,46 @@ uint16_t Filter_JoystickValue(EMA_FilterStruct* filter, uint16_t input)
     return (uint16_t)(filter->value / scale);
 }
 
-
-void Joystick_Progress()
+static uint16_t Joystick_InvertValue(uint16_t value)
 {
-  Protocol_DataFrame data = {};
+    if(value > JOYSTICK_MAX_VALUE)
+        value = JOYSTICK_MAX_VALUE;
 
-  uint16_t rawX = Joystick_Value[X];
-  uint16_t rawY = Joystick_Value[Y];
+    return JOYSTICK_MAX_VALUE - value;
+}
 
-  uint16_t filteredX = Filter_JoystickValue(&g_pFilter_X, rawX);
-  uint16_t filteredY = Filter_JoystickValue(&g_pFilter_Y, rawY);
+void Joystick_Progress(void)
+{
+    Protocol_DataFrame data = {0};
 
-  filteredX = Joystick_ClampValue(filteredX);
-  filteredY = Joystick_ClampValue(filteredY);
+    uint16_t originalX = Joystick_Value[X];
+    uint16_t originalY = Joystick_Value[Y];
 
-  // Clamp_JoystickValue();
-  
-  data.protocal_Id = PROTOCOL_ID_MAIN;
-  data.command_Id = C_STEERING_CONTROL;
-  data.data[0] = (uint8_t)((filteredY >> 8) & 0xFF);
-  data.data[1] = (uint8_t)(filteredY & 0xFF);
+    // uint16_t invertedX = Joystick_InvertValue(originalX);
+    // uint16_t invertedY = Joystick_InvertValue(originalY);
 
-  data.data[2] = (uint8_t)((filteredX >> 8) & 0xFF);
-  data.data[3] = (uint8_t)(filteredX & 0xFF);
+    uint16_t filteredX = Filter_JoystickValue(&g_pFilter_X, originalX);
+    uint16_t filteredY = Filter_JoystickValue(&g_pFilter_Y, originalY);
 
-  // 테스트로 UART 데이터 송신
-  // printf("X : [%u] \r\n Y : %u \r\n", Joystick_Value[X], Joystick_Value[Y]);
-  Send_DataFrame(&data);
+    filteredX = Joystick_ClampValue(filteredX);
+    filteredY = Joystick_ClampValue(filteredY);
+
+    // printf("X Original:%u, Inverted:%u, Filtered:%u\r\n", originalX, invertedX, filteredX );
+    // printf("Y Original:%u, Inverted:%u, Filtered:%u\r\n", originalY, invertedY, filteredY);
+
+    // printf("X Original:%u \r\n", originalX); 
+    // printf("Y Original:%u \r\n", originalY); 
+
+    data.protocal_Id = PROTOCOL_ID_MAIN;
+    data.command_Id = C_STEERING_CONTROL;
+
+    data.data[0] = (uint8_t)((filteredY >> 8) & 0xFF);
+    data.data[1] = (uint8_t)(filteredY & 0xFF);
+
+    data.data[2] = (uint8_t)((filteredX >> 8) & 0xFF);
+    data.data[3] = (uint8_t)(filteredX & 0xFF);
+
+    Send_DataFrame(&data);
 }
 
 

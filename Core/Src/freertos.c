@@ -144,7 +144,7 @@ void MX_FREERTOS_Init(void) {
   RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Control */
   ControlHandle = osThreadNew(ControlTask, NULL, &Control_attributes);
@@ -232,7 +232,7 @@ void BluetoothTask(void *argument)
 
     for (;;)
     { 
-      Bluetooth_ATProgress();
+      // Bluetooth_ATProgress();
       // Bluetooth_TestProgress();
       osDelay(1);
     }

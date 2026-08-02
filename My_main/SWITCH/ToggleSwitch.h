@@ -6,8 +6,8 @@
 typedef enum
 {
     TURN_TOGGLE_MIDDLE = 0,
-    TURN_TOGGLE_LEFT = 1,
-    TURN_TOGGLE_RIGHT = 2,
+    TURN_TOGGLE_RIGHT = 1,
+    TURN_TOGGLE_LEFT = 2,
     TURN_TOGGLE_NONE = 4
 } Turn_ToggleState;
 
