@@ -10,8 +10,8 @@ typedef struct
 
 typedef enum
 {
-    AUTH_UNLOCKED = 0,
-    AUTH_FAILED = 1,
+    AUTH_FAILED = 0,
+    AUTH_UNLOCKED = 1,
     AUTH_LOCKED = 2,
 } AUTH_TYPE;
 

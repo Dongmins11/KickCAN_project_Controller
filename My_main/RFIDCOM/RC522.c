@@ -1,5 +1,6 @@
 #include "RC522.h"
 #include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 // volatile uint8_t rc522IrqFlag;
 extern SPI_HandleTypeDef hspi1;
@@ -98,136 +99,139 @@ void RC522_Init(void)
  * FIFO에 커맨드 데이터를 넣고 실행 -> IRQ로 완료/타임아웃 대기
  * (CommIrqReg를 SPI로 반복 폴링하지 않고 EXTI 인터럽트로 대기)
  * --------------------------------------------------------------- */
-uint8_t RC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint16_t *backLen)
+uint8_t RC522_ToCard(uint8_t command, uint8_t* sendData, uint8_t sendLen, uint8_t* backData, uint16_t* backLen)
 {
-    uint8_t status = MI_ERR;
-    uint8_t n;
-    uint8_t waitIRq = 0x00;
+    uint8_t irqVal;
+    uint8_t errorVal;
+    uint8_t fifoLength;
+    uint32_t startTick;
 
-    if (command == PCD_TRANSCEIVE)
-    {
-        waitIRq = 0x30;   /* RxIRq | IdleIRq */
-    }
+    if(sendData == NULL || backData == NULL || backLen == NULL)
+        return MI_ERR;
 
-    RC522_ClearBitMask(ComIrqReg, 0x80);   /* Set1=0 -> 전체 IRQ 비트 클리어 */
-    RC522_SetBitMask(FIFOLevelReg, 0x80);  /* FIFO flush */
+    *backLen = 0;
+
     RC522_WriteReg(CommandReg, PCD_IDLE);
 
-    for (uint8_t i = 0; i < sendLen; i++)
-    {
+    RC522_WriteReg(ComIrqReg, 0x7F);
+
+    RC522_SetBitMask(FIFOLevelReg, 0x80);
+
+    for(uint8_t i = 0; i < sendLen; i++)
         RC522_WriteReg(FIFODataReg, sendData[i]);
-    }
 
     RC522_WriteReg(CommandReg, command);
-    if (command == PCD_TRANSCEIVE)
-    {
-        RC522_SetBitMask(BitFramingReg, 0x80);   /* StartSend=1 */
-    }
 
-    uint32_t startTick = HAL_GetTick();
-    // rc522IrqFlag = 0;
-    uint8_t irqVal = 0;
-    while (1)
-    {
-        // irqVal = RC522_ReadReg(ComIrqReg);
-        // if (rc522IrqFlag || (irqVal & waitIRq) || (irqVal & 0x01))   /* 0x01 = TimerIRq */
-        // {
-        //     break;
-        // }
-        // if ((HAL_GetTick() - startTick) > 25)   /* 25ms 타임아웃 */
-        // {
-        //     break;
-        // }
+    if(command == PCD_TRANSCEIVE)
+        RC522_SetBitMask(BitFramingReg, 0x80);
 
+    startTick = osKernelGetTickCount();
+
+    while(1)
+    {
         irqVal = RC522_ReadReg(ComIrqReg);
 
-        if((irqVal & waitIRq) || (irqVal & 0x01))
+        if(irqVal & 0x01)
+        {
+            RC522_ClearBitMask(BitFramingReg, 0x80);
+            return MI_TIMEOUT;
+        }
+
+        if(irqVal & 0x02)
+        {
+            RC522_ClearBitMask(BitFramingReg, 0x80);
+            return MI_ERR;
+        }
+
+        if(irqVal & 0x20)
             break;
 
-        if((HAL_GetTick() - startTick) > 25)
-            break;
+        if((osKernelGetTickCount() - startTick) > 25)
+        {
+            RC522_ClearBitMask(BitFramingReg, 0x80);
+            return MI_TIMEOUT;
+        }
     }
 
     RC522_ClearBitMask(BitFramingReg, 0x80);
+    errorVal = RC522_ReadReg(ErrorReg);
 
-    // if (rc522IrqFlag || (irqVal & waitIRq))
-    if (irqVal & waitIRq)
-    {
-        uint8_t errorReg = RC522_ReadReg(ErrorReg);
-        if ((errorReg & 0x1B) == 0x00)   /* BufferOvfl, CollErr, CRCErr, ProtocolErr 없음 */
-        {
-            status = MI_OK;
+    if(errorVal & 0x1B)
+        return MI_ERR;
 
-            if (command == PCD_TRANSCEIVE)
-            {
-                n = RC522_ReadReg(FIFOLevelReg);
-                if (n > 16) n = 16;
+    fifoLength = RC522_ReadReg(FIFOLevelReg);
 
-                *backLen = n;
-                for (uint8_t i = 0; i < n; i++)
-                {
-                    backData[i] = RC522_ReadReg(FIFODataReg);
-                }
-            }
-        }
-    }
-    else
-    {
-        status = MI_TIMEOUT;
-    }
+    if(fifoLength == 0)
+        return MI_ERR;
 
-    return status;
+    if(fifoLength > 16)
+        fifoLength = 16;
+
+    *backLen = fifoLength;
+
+    for(uint8_t i = 0; i < fifoLength; i++)
+        backData[i] = RC522_ReadReg(FIFODataReg);
+
+    return MI_OK;
 }
  
 /* ---------------------------------------------------------------
  * 카드 요청 (REQA) - 통신 범위 내 카드가 있는지 확인
  * --------------------------------------------------------------- */
-uint8_t RC522_Request(uint8_t reqMode, uint8_t *tagType)
+uint8_t RC522_Request(uint8_t reqMode, uint8_t* tagType)
 {
     uint8_t status;
-    uint16_t backBits;
- 
-    RC522_WriteReg(BitFramingReg, 0x07);   /* 마지막 바이트 중 유효 비트 수 = 7 */
- 
+    uint16_t backBytes = 0;
+
+    if(tagType == NULL)
+        return MI_ERR;
+
+    RC522_WriteReg(BitFramingReg, 0x07);
+
     tagType[0] = reqMode;
-    status = RC522_ToCard(PCD_TRANSCEIVE, tagType, 1, tagType, &backBits);
- 
-    if ((status != MI_OK) || (backBits != 2))
-    {
-        status = MI_ERR;
-    }
- 
-    return status;
+
+    status = RC522_ToCard(PCD_TRANSCEIVE, tagType,1, tagType, &backBytes);
+
+    if(status != MI_OK)
+        return status;
+
+    if(backBytes != 2)
+        return MI_ERR;
+
+    return MI_OK;
 }
- 
 /* ---------------------------------------------------------------
  * 충돌방지(Anticollision) - 카드 UID(4byte) 읽기
  * --------------------------------------------------------------- */
-uint8_t RC522_Anticoll(uint8_t *serNum)
+uint8_t RC522_Anticoll(uint8_t* serNum)
 {
     uint8_t status;
-    uint8_t serNumCheck = 0;
-    uint16_t unLen;
- 
+    uint8_t bcc = 0;
+    uint16_t receivedBytes = 0;
+
+    if(serNum == NULL)
+        return MI_ERR;
+
     RC522_WriteReg(BitFramingReg, 0x00);
- 
+
+    RC522_ClearBitMask(CollReg, 0x80);
+    
     serNum[0] = PICC_ANTICOLL;
     serNum[1] = 0x20;
- 
-    status = RC522_ToCard(PCD_TRANSCEIVE, serNum, 2, serNum, &unLen);
- 
-    if (status == MI_OK)
-    {
-        for (uint8_t i = 0; i < 4; i++)
-        {
-            serNumCheck ^= serNum[i];
-        }
-        if (serNumCheck != serNum[4])
-        {
-            status = MI_ERR;
-        }
-    }
- 
-    return status;
+
+    status = RC522_ToCard(PCD_TRANSCEIVE, serNum, 2, serNum, &receivedBytes);
+
+    if(status != MI_OK)
+        return status;
+
+    if(receivedBytes != 5)
+        return MI_ERR;
+
+    for(uint8_t i = 0; i < 4; i++)
+        bcc ^= serNum[i];
+
+    if(bcc != serNum[4])
+        return MI_ERR;
+
+    return MI_OK;
 }
- 

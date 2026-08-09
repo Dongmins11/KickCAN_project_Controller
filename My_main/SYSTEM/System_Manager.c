@@ -143,7 +143,7 @@ void System_HandleRfidAuthorized(void)
 
 void System_HandleRfidUnknown(void)
 {
-    SystemState previousState = g_systemState;
+        SystemState previousState = g_systemState;
 
     if(previousState == SYSTEM_LOCKED || previousState == SYSTEM_AUTH_FAILED)
         return;
@@ -169,7 +169,7 @@ uint8_t System_HandleBluetoothStateChanged(void)
             if(CheckAuthFailurepending())
                 return 0;
 
-            // 인증 성공 실패 여부 처리
+            // 인ㄴ증 성공실패 여부 처리슨
             if(System_SendAuthorization(AUTH_UNLOCKED) != HAL_OK)
                 return 0;
 
