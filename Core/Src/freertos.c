@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "Bt_Com.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -145,7 +144,7 @@ void MX_FREERTOS_Init(void) {
   RFIDHandle = osThreadNew(RFIDTask, NULL, &RFID_attributes);
 
   /* creation of Bluetooth */
-  // BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
+  BluetoothHandle = osThreadNew(BluetoothTask, NULL, &Bluetooth_attributes);
 
   /* creation of Control */
   ControlHandle = osThreadNew(ControlTask, NULL, &Control_attributes);
