@@ -1,11 +1,14 @@
 # KICK-CAN (깡통차기!)
 
 > **RFID 인증 기반 Bluetooth Controller와 CAN 차량 네트워크를 결합한 STM32 분산 임베디드 RC카 시스템**
+<br><br><br>
 
 <p align="center">
   <img src="https://github.com/VisionAITeamProject/ImageUploadRepo/blob/main/KakaoTalk_20260810_234903664.jpg" width="45%" alt="Image 1">
   <img src="https://github.com/VisionAITeamProject/ImageUploadRepo/blob/main/KakaoTalk_20260810_234903664_01.jpg" width="45%" alt="Image 2">
 </p>
+
+<br><br>
 
 ## 프로젝트 소개
 
@@ -29,7 +32,9 @@ Controller에는 RFID 인증 기능을 적용했습니다. 등록된 사용자 �
 
 ![KICK-CAN 시스템 아키텍처](assets/system-architecture.png)
 
+<br>
 <img src="https://github.com/VisionAITeamProject/ImageUploadRepo/blob/main/kick-can-system-architecture-simple-fixed%20(2).png" width="600" alt="System Architecture">
+<br>
 
 | 노드 | 주요 역할 | 통신 |
 |---|---|---|
