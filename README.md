@@ -20,6 +20,7 @@
 
 **Stack**
 
+![CAN](https://img.shields.io/badge/CAN-009688?style=flat-square)
 ![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=white)
 ![STM32F411](https://img.shields.io/badge/STM32F411-03234B?style=flat-square&logo=stmicroelectronics&logoColor=white)
 ![STM32 HAL](https://img.shields.io/badge/STM32_HAL-00599C?style=flat-square)
