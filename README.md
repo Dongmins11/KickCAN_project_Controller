@@ -1,188 +1,264 @@
-# KICK-CAN (깡통차기!)
+# 🚗 KICK-CAN | STM32 분산 임베디드 RC카
 
-> **RFID 인증 기반 Bluetooth Controller와 CAN 차량 네트워크를 결합한 STM32 분산 임베디드 RC카 시스템**
-<br><br><br>
+> RFID로 사용자를 인증하고, 무선 조종기와 CAN 차량 네트워크를 연결해 주행·센서 감지·상태 표시를 구현한 프로젝트입니다.
+
+**이 저장소는 STM32F411 기반 Controller의 하드웨어 인터페이스와 펌웨어를 다룹니다.**
 
 <p align="center">
-  <img src="https://github.com/VisionAITeamProject/ImageUploadRepo/blob/main/KakaoTalk_20260810_234903664.jpg" width="45%" alt="Image 1">
-  <img src="https://github.com/VisionAITeamProject/ImageUploadRepo/blob/main/KakaoTalk_20260810_234903664_01.jpg" width="45%" alt="Image 2">
+  <img src="assets/project-photo-1.jpg" width="45%" alt="제작한 핸드헬드 Controller" />
+  <img src="assets/project-photo-2.jpg" width="45%" alt="차량 상태 표시부와 RC카 실물" />
+  <br />
+  <sub>제작한 Controller와 차량 시스템</sub>
 </p>
-
-<br><br>
-
-## 프로젝트 소개
-
-KICK-CAN은 핸드헬드 Controller와 RC카 내부의 세 개 차량 노드를 연동한 **4-Node 분산 임베디드 시스템**입니다.
-
-사용자가 Controller에서 입력한 조이스틱과 스위치 데이터는 HC-05 Bluetooth를 통해 Main_Node로 전달됩니다. Main_Node는 수신한 명령에 따라 4WD 모터를 제어하며, Node_1과 Node_2는 CAN Bus를 이용해 센서 및 차량 상태 데이터를 공유합니다.
-
-Controller에는 RFID 인증 기능을 적용했습니다. 등록된 사용자 인증이 완료되기 전에는 조작·통신 주변장치의 전원과 제어 패킷 송신을 차단하고, 인증 성공 후에만 차량 조작을 허용하도록 설계했습니다.
 
 | 항목 | 내용 |
 |---|---|
-| 개발 기간 | 2026.07.23 ~ 2026.07.30 |
-| 개발 인원 | 4명 |
-| 시스템 구성 | Main_Node, Node_1, Node_2, Controller |
-| 차량 내부 통신 | CAN Bus |
-| 무선 통신 | HC-05 Bluetooth · UART |
-| 내 담당 | **Controller 하드웨어 구성 및 펌웨어 개발** |
-| 담당 MCU | STM32F411 |
+| Period | 2026.07 |
+| Team | 4명 · Controller / Main Node / Sensor Node / Display Node |
+| Role | **신동민 — Controller 하드웨어 구성 및 펌웨어 개발** |
+| 주요 구현 | RFID 인증·전원 제어, 조이스틱·스위치 입력 처리, Bluetooth 패킷 송신, FSM 설계 |
 
-## 시스템 아키텍처
+**Stack**
 
-![KICK-CAN 시스템 아키텍처](assets/system-architecture.png)
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=white)
+![STM32F411](https://img.shields.io/badge/STM32F411-03234B?style=flat-square&logo=stmicroelectronics&logoColor=white)
+![STM32 HAL](https://img.shields.io/badge/STM32_HAL-00599C?style=flat-square)
+![FreeRTOS](https://img.shields.io/badge/FreeRTOS-78A22F?style=flat-square)
+![ADC DMA](https://img.shields.io/badge/ADC_%2F_DMA-00897B?style=flat-square)
+![SPI](https://img.shields.io/badge/SPI-7E57C2?style=flat-square)
+![GPIO EXTI](https://img.shields.io/badge/GPIO_%2F_EXTI-E69F00?style=flat-square)
+![UART Bluetooth](https://img.shields.io/badge/UART_%2F_Bluetooth-0082FC?style=flat-square&logo=bluetooth&logoColor=white)
 
-<br>
-<img src="https://github.com/VisionAITeamProject/ImageUploadRepo/blob/main/kick-can-system-architecture-simple-fixed%20(2).png" width="600" alt="System Architecture">
-<br>
+## 🎬 Demo
 
-| 노드 | 주요 역할 | 통신 |
+**전체 시연 약 2분** · RFID 인증, 경적·방향지시등, 조이스틱 주행 및 차량 센서 연동
+
+<p align="center">
+  <a href="https://youtu.be/KFFg7INO1hw">
+    <img src="assets/demo-driving.png" width="640" alt="클릭하여 YouTube에서 KICK-CAN 시연 영상 보기" />
+  </a>
+  <br />
+  <a href="https://youtu.be/KFFg7INO1hw">▶ KICK-CAN 시연 영상 보기 · YouTube</a>
+</p>
+
+주요 장면과 구현 설명은 아래에서 확인할 수 있습니다.
+
+## 🏗️ System Overview
+
+운전자 입력, 차량 구동, 환경 감지, 정보 표시를 네 개 노드로 나누어 차량 전장 시스템을 구성했습니다.
+
+![KICK-CAN 통신 구조](assets/system-overview.svg)
+
+| 노드 | 역할 |
+|---|---|
+| **Controller · 담당** | RFID 인증, 조이스틱·스위치 입력, Bluetooth 제어 명령 송신 |
+| Main Node | 무선 명령 수신, 4WD 모터 구동, 배터리·속도 측정, CAN 연계 |
+| Node 1 | 온도·조도·전후방 초음파 센서 처리 및 CAN 메시지 송신 |
+| Node 2 | TFT·CLCD 차량 상태 표시, 방향지시등·헤드라이트·부저 제어 |
+
+Controller는 **Bluetooth로 Main Node에 연결**되며, 차량 내부의 세 노드는 **CAN Bus**로 통신합니다.
+
+<details>
+<summary>전체 하드웨어 구성도 보기</summary>
+
+**장치 구성 · HSI 1**
+
+![노드별 하드웨어 구성](assets/HSI_1.drawio.png)
+
+**인터페이스 구성 · HSI 2**
+
+![노드별 인터페이스 구성](assets/HSI_2.drawio.png)
+
+두 이미지는 설계 당시 원본입니다. HSI 2의 TFT 연결은 I2C로 표시되어 있으나, 기능 명세와 HSI 3에서는 SPI로 정의되어 있습니다.
+
+</details>
+
+## 🧩 My Contribution
+
+사용자 입력이 **인증 → 연결 확인 → 입력 처리 → 패킷 송신**으로 이어지도록 Controller를 구성했습니다.
+
+| 담당 기능 | 구현 내용 |
+|---|---|
+| RFID 인증·전원 제어 | RC522 UID 판별, 인증 후 릴레이 활성화, 제어 명령 송신 조건 관리 |
+| 조이스틱 입력 | ADC Circular DMA로 2축 수집, EMA 필터와 끝값 보정 후 제어 데이터 구성 |
+| 스위치 입력 | EXTI 이벤트 전달, Task에서 디바운싱 후 경적·방향지시등 명령 생성 |
+| 무선 통신 | 시작·종료 바이트와 XOR 체크섬을 포함한 12바이트 프레임 송신 |
+| FSM·실행 구조 | 인증·연결 상태 전이 설계, RFID·Joystick·Control Task 분리, UART Mutex 적용 |
+
+## ⚙️ Key Implementation
+
+### 1. FSM 기반 인증·연결·제어 상태 관리
+
+`LOCKED → WAIT_BT → ACTIVE` 순서로 제어를 활성화합니다. 등록 카드 인증만으로 바로 송신하지 않고, Bluetooth 연결과 인증 메시지 송신까지 확인한 뒤 주행 명령을 허용합니다.
+
+![Controller FSM 설계도](assets/controller-fsm.svg)
+
+RFID와 Bluetooth에서 발생한 이벤트를 `ControlTask`로 모으고, 상태 전이는 `System_Manager`에서 관리합니다. 입력 모듈은 `System_CanControl()`을 통해 제어 가능 여부를 확인하도록 역할을 나누었습니다.
+
+- 부팅 시 릴레이를 끄고 제어 명령 송신을 차단합니다.
+- 등록 카드 인증 후 릴레이를 켜고 Bluetooth 연결을 기다립니다.
+- 연결이 끊기면 `WAIT_BT`로 전환해 제어 명령 송신을 차단합니다.
+- 동작 중 미등록 카드를 인식하면 `AUTH_FAILED`로 전환합니다. Bluetooth가 연결되어 있으면 인증 실패를 알리고, 재인증을 기다립니다.
+
+| 인증 성공 · 00:25 | 인증 실패 · 00:31 |
+|---|---|
+| ![인증 성공 시 녹색·청색 LED와 KEY OK 표시](assets/demo-auth-ok.png) | ![인증 실패 시 적색·청색 LED와 KEY FAIL 표시](assets/demo-auth-failed.png) |
+| Controller의 상태 LED와 차량의 `KEY:OK` 표시 | Controller의 상태 LED와 차량의 `KEY:FAIL` 표시 |
+
+*`Final.mp4`에서 캡처한 실제 시연 장면입니다. FSM은 현재 저장소 코드를 기준으로 정리했습니다.*
+
+[관련 코드: System_Manager.c](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/My_main/SYSTEM/System_Manager.c)
+
+### 2. ADC DMA와 필터를 이용한 조이스틱 입력 처리
+
+10-bit ADC의 두 채널을 Circular DMA로 수집하고, **EMA 필터 → 끝값 보정 → 제어 프레임 구성** 순서로 처리합니다. 미세하게 변하는 아날로그 값을 그대로 전송하지 않도록 필터를 적용했습니다.
+
+![발표자료 26쪽: 조이스틱 입력 안정화](assets/joystick-processing.png)
+
+<p align="center">
+  <img src="assets/demo-driving.png" width="640" alt="조이스틱 전진 조작과 RC카 주행을 함께 보여주는 시연 장면" />
+  <br />
+  <sub>01:41 · 조이스틱 조작, RC카 주행, 차량 표시부를 함께 보여주는 장면</sub>
+</p>
+
+[관련 코드: Joystick.c](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/My_main/SWITCH/Joystick.c)
+
+### 3. 이벤트 처리와 UART 공유 자원 관리
+
+스위치 인터럽트에서는 Thread Flag만 전달하고, `ControlTask`에서 디바운싱과 명령 생성을 처리합니다. RFID 처리와 조이스틱 처리를 별도 Task로 나누고, 공통 송신 함수에서는 **UART Mutex**로 프레임이 서로 섞이지 않도록 접근을 제어합니다.
+
+송신 직전에도 제어 가능 상태를 다시 확인하여, 인증 실패나 연결 상태 변경 이후 주행·스위치 명령이 계속 나가지 않도록 구성했습니다.
+
+| 경적 버튼 입력 · 00:44 | 방향지시등 입력 · 00:52 |
+|---|---|
+| ![경적 버튼을 누르는 시연 장면](assets/demo-horn.png) | ![토글 조작과 우측 방향지시등 시연 장면](assets/demo-turn.png) |
+| 택트 스위치 입력을 경적 명령으로 전송 | 토글 입력을 차량의 방향지시등·표시부와 연계 |
+
+[Task 구성](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/Core/Src/freertos.c) · [공통 송신 코드](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/My_main/BTCOM/Bt_Com.c)
+
+## 🔧 Troubleshooting
+
+### Bluetooth 통신 안정화 및 수신율 개선
+
+**문제:** UART 수신 프레임의 경계가 밀리고 불필요한 데이터가 섞여, 차량에서 제어 명령을 정상적으로 해석하지 못하는 현상이 발생했습니다.
+
+| 개선 단계 | 핵심 대응 |
+|---|---|
+| 프레임 동기화 | Start/End 바이트로 패킷 경계를 식별하고, 정해진 길이의 프레임을 확보 |
+| 무결성 검사 | 검사값이 맞지 않는 프레임을 걸러내 잘못된 제어 데이터의 반영 방지 |
+| 수신 버퍼 보호 | 수신 측 DMA를 Circular에서 Normal 모드로 변경하고, 처리 중인 데이터가 새 수신 데이터로 덮이지 않도록 수신·처리 흐름 분리 |
+
+**결과:** 발표자료에서는 프레임 밀림과 잘못된 데이터 수신, 버퍼 덮어쓰기를 줄여 통신 안정성을 개선한 사례로 정리했습니다.
+
+제 Controller에서는 **Start/End·XOR 체크섬을 포함한 프레임 생성과 UART Mutex 기반 송신**을 구현했습니다. 위 DMA 수신 처리는 **Main Node 수신 측을 포함한 팀 통합 개선 사례**입니다.
+
+<details>
+<summary>발표자료와 Controller 구현의 용어 차이</summary>
+
+발표자료 43쪽은 무결성 검사를 CRC로 설명하지만, 현재 Controller의 `Data_Wrapper()`는 앞 10바이트의 XOR 체크섬을 계산합니다. 따라서 Controller 구현을 CRC로 표기하지 않았습니다. 수신 DMA 변경은 발표자료에 근거한 설명이며, 이 저장소의 조이스틱 ADC는 Circular DMA를 사용합니다.
+
+출처: 팀 발표자료 43쪽.
+
+</details>
+
+## 📋 Design Documents
+
+설계에 사용한 엑셀의 주요 내용을 아래 표로 정리했습니다. **요약은 현재 Controller 코드 기준**이며, 원본 파일은 설계 당시 기록으로 함께 제공합니다.
+
+<details>
+<summary>🔌 Controller 핀맵 · HSI</summary>
+
+| 장치 / 신호 | MCU 핀 | 인터페이스 |
 |---|---|---|
-| Main_Node | 4WD 모터 제어, 배터리 감시, Bluetooth–CAN 게이트웨이 | Bluetooth, UART, CAN |
-| Node_1 | 온·습도 및 초음파 센서 처리, Thermal Throttling | CAN 송신·수신 |
-| Node_2 | OLED·CLCD 출력, 방향지시등, Fail-safe 경고 | CAN 수신 전용 |
-| **Controller** | **RFID 인증, 사용자 입력 처리, 무선 제어 데이터 송신** | **SPI, UART, Bluetooth** |
+| Joystick X / Y | PA0 / PA1 | ADC1_IN0 / IN1 + DMA |
+| RC522 SCK / MISO / MOSI | PA5 / PA6 / PA7 | SPI1 |
+| RC522 CS / RST | PA8 / PC7 | GPIO Output |
+| HC-05 TX / RX용 MCU 핀 | PA9 / PA10 | USART1_TX / RX |
+| HC-05 STATE | PB5 | GPIO EXTI |
+| HC-05 EN | PB10 | GPIO Output |
+| Relay | PC0 | GPIO Output |
+| Horn Switch | PA4 | GPIO EXTI |
+| Turn Switch Left / Right | PB0 / PC1 | GPIO EXTI |
+| 상태 LED R / G / B | PC8 / PC6 / PC5 | GPIO Output |
 
-- Controller는 CAN Bus에 직접 연결되지 않습니다.
-- Controller의 제어 명령은 Bluetooth를 통해 Main_Node로 전달됩니다.
-- Main_Node는 차량 구동과 Bluetooth–CAN 게이트웨이 역할을 수행합니다.
-- Node_2는 데이터의 원래 출처와 관계없이 CAN Bus를 통해서만 정보를 수신합니다.
+[전체 노드 핀맵 표](docs/hsi.md) · [HSI 원본 Excel](docs/files/HSI_3.xlsx)
 
-## 나의 담당 — Controller Node
+</details>
 
-STM32F411 기반 핸드헬드 Controller의 하드웨어 인터페이스 구성과 펌웨어 개발을 담당했습니다.
+<details>
+<summary>📡 Controller 송신 명령 · ICD</summary>
 
-Controller는 사용자 입력을 차량 제어 데이터로 변환하는 무선 조종기이자, **인증된 사용자에게만 차량 제어 권한을 허용하는 보안 게이트웨이**입니다.
+모든 명령은 Bluetooth를 통해 Main Node로 전달됩니다. 프레임의 목적지 ID는 무선으로 직접 연결된 장치와 구분되는 논리 목적지입니다.
 
-| 담당 영역 | 구현 내용 | 적용 기술 |
-|---|---|---|
-| RFID 인증 | MFRC522로 UID를 읽고 등록 사용자 판별 | SPI |
-| 전원 인터락 | 인증 전 주변장치 전원 차단, 인증 성공 후 활성화 | GPIO, Relay |
-| 조이스틱 입력 | 2축 아날로그 입력 연속 수집 및 안정화 | ADC, Circular DMA, EMA |
-| 스위치 입력 | 3단 토글·택트 스위치 상태 처리 | GPIO, EXTI, Debouncing |
-| 제어 패킷 | 입력값을 Main_Node용 명령 프레임으로 변환 | Command ID, Data Frame |
-| 무선 송신 | HC-05를 통한 제어 패킷 전송 | UART, Bluetooth |
-| 시스템 관리 | 인증·전원·통신 상태에 따른 송신 허용 | FreeRTOS, CMSIS-RTOS v2 |
-
-### Controller 동작 흐름
+| 명령 ID | 기능 | 데이터 | 논리 목적지 |
+|---|---|---|---|
+| 10 | 인증 상태 | 인증 허용·실패 상태 | Node 2 |
+| 11 | 주행·조향 | Y 2바이트 + X 2바이트, 각 값 0–1023 | Main Node |
+| 12 | 경적 | 스위치 입력 상태 | Node 2 |
+| 13 | 방향지시등 | 중앙 0 / 오른쪽 1 / 왼쪽 2 (`NONE` 4) | Node 2 |
 
 ```text
-전원 인가
-→ STM32·MFRC522 동작
-→ RFID 사용자 인증
-→ 주변장치 전원 활성화
-→ 조이스틱·스위치 입력 처리
-→ 제어 패킷 생성
-→ HC-05 Bluetooth 송신
-→ Main_Node 차량 제어
+Start  | Destination | Command | Data | XOR Checksum | End
+0xAA   | 1 byte      | 1 byte  | 7 B  | 1 byte       | 0xFF
 ```
 
-## 핵심 구현
+총 12바이트이며, 체크섬은 앞의 10바이트를 XOR한 값입니다. 조이스틱은 Y, X 순서로 각 축의 상위 바이트부터 기록합니다.
 
-### 1. RFID 인증 기반 이중 인터락
+[전체 ICD 표](docs/icd.md) · [ICD 원본 Excel](docs/files/ICD.xlsx)
 
-Controller의 전원 영역을 인증에 필요한 **상시 전원 영역**과 인증 후 사용하는 **제어 전원 영역**으로 분리했습니다.
+</details>
 
-| 구분 | 인증 전 | 인증 후 |
-|---|---:|---:|
-| STM32F411·MFRC522 | ON | ON |
-| 조이스틱·HC-05 등 주변장치 | OFF | ON |
-| 사용자 입력 처리 | 비활성 | 활성 |
-| 제어 패킷 송신 | 차단 | 정상 상태에서 허용 |
+<details>
+<summary>🧾 기능 명세와 주요 부품 · BOM</summary>
 
-등록 RFID 인증에 성공하면 STM32가 릴레이를 제어하여 조이스틱과 HC-05 등의 주변장치에 전원을 공급합니다. 펌웨어에서도 정상 활성화 상태가 되기 전까지 제어 패킷 송신을 차단하여 **하드웨어 전원 제어와 소프트웨어 송신 제어를 결합한 이중 인터락**을 구현했습니다.
-
-인증 전에는 HC-05 전원이 차단되어 있으므로 인증 실패 상태를 Bluetooth로 전송하지 않습니다. 미등록 카드가 인식되면 잠금 상태를 유지하고 로컬 LED로 인증 실패를 표시합니다.
-
-### 2. ADC Circular DMA 기반 조이스틱 처리
-
-2축 조이스틱의 아날로그 값을 ADC Circular DMA로 연속 수집했습니다. DMA를 사용하여 CPU가 매 변환 결과를 직접 읽는 부하를 줄이고, 입력 수집과 데이터 처리를 분리했습니다.
-
-수집된 값에는 다음 처리를 적용했습니다.
-
-- EMA 필터를 이용한 순간 노이즈 완화
-- 조이스틱 물리적 편차를 고려한 중앙값 보정
-- 미세한 중앙 흔들림을 제거하는 Dead Zone
-- 비정상 범위를 제한하는 Clamp
-- 차량 기준에 맞춘 축 방향 및 출력값 변환
-
-이를 통해 조이스틱을 움직이지 않았을 때 발생하는 미세한 ADC 변화가 차량 제어 명령으로 전달되는 현상을 줄였습니다.
-
-### 3. GPIO EXTI와 디바운싱
-
-3단 토글 스위치와 택트 스위치는 GPIO EXTI로 입력 변화를 감지했습니다. ISR에서는 복잡한 로직을 실행하지 않고 입력 이벤트만 전달하고, 실제 디바운싱과 최종 상태 판정은 일반 실행 흐름에서 수행했습니다.
-
-이를 통해 인터럽트 처리 시간을 줄이고 기계식 접점의 채터링으로 동일 명령이 여러 번 발생하는 문제를 방지했습니다.
-
-### 4. Bluetooth 패킷 송신과 상태 관리
-
-조이스틱과 스위치 값을 Command ID와 데이터 영역으로 구성하여 UART로 HC-05에 전달했습니다. Main_Node 담당자와 명령 ID, 데이터 범위, 패킷 구조 및 종료 조건을 협의하고 Controller 측 패킷 생성과 송신 기능을 구현했습니다.
-
-FreeRTOS에서는 RFID 인증, 입력 처리, Bluetooth 송신 및 시스템 상태 관리 기능을 역할별로 분리했습니다. 최종 송신 여부는 인증과 전원 상태를 확인한 뒤 결정하여, 입력 데이터가 생성되더라도 제어 조건이 충족되지 않으면 차량으로 전송되지 않도록 했습니다.
-
-## 문제 해결
-
-| 문제 | 원인 | 해결 방법 |
-|---|---|---|
-| 조이스틱 중앙값 흔들림 | 아날로그 노이즈와 물리적 중앙 오차 | EMA, 중앙값 보정, Dead Zone, Clamp 적용 |
-| 스위치 명령 중복 발생 | 기계식 접점 채터링 | 하드웨어 안정화, 시간 기반 디바운싱, ISR 처리 최소화 |
-| RFID 카드 순간 미검출 | 폴링 과정의 일시적인 읽기 실패 | 연속 미검출 조건을 만족할 때 제거 상태로 판정 |
-| 인증 실패 송신 명세 충돌 | 인증 전에는 HC-05 전원이 차단됨 | Bluetooth 송신 대신 로컬 LED 표시와 잠금 유지 |
-| 기능 간 결합도 증가 | 인증·입력·송신 로직이 하나의 흐름에 집중 | FreeRTOS 기능 분리와 상태 기반 송신 제어 적용 |
-
-## 검증 항목
-
-| 검증 항목 | 확인 내용 |
+| 기능 ID | Controller 기능 |
 |---|---|
-| 등록 RFID 인증 | 주변장치 전원 활성화 후 입력 및 통신 허용 |
-| 미등록 RFID 인식 | 주변장치 전원과 제어 패킷 송신 차단 유지 |
-| 조이스틱 중앙 상태 | Dead Zone 범위에서 중립 명령 유지 |
-| 조이스틱 방향 입력 | 각 축 입력이 정의한 주행·조향 값으로 변환 |
-| 토글·택트 반복 조작 | 디바운싱 적용 후 중복 명령 억제 |
-| Controller–Main_Node 통신 | 제어 패킷 수신 및 실제 차량 동작 반영 확인 |
-| 전체 시스템 연동 | Bluetooth Controller와 CAN 차량 노드 통합 동작 확인 |
+| F-CTL-01 | RFID 사용자 인증 |
+| F-CTL-02 | 인증 기반 입력 전원 인터락 |
+| F-CTL-03 | 조이스틱 주행·조향 데이터 수집 |
+| F-CTL-04 | 방향지시등·경적 스위치 입력 처리 |
+| F-CTL-05 | 무선 제어 패킷 전송 |
 
-> 정량 수치는 측정 화면이나 로그처럼 근거 자료가 남아 있는 항목만 추가합니다.
-
-## 기술 스택
-
-| 분류 | 기술 |
+| 주요 부품 | 용도 |
 |---|---|
-| MCU·Firmware | STM32F411, C, STM32 HAL |
-| RTOS | FreeRTOS, CMSIS-RTOS v2 |
-| 입력 처리 | ADC, Circular DMA, GPIO, EXTI |
-| 통신 | SPI, UART, HC-05 Bluetooth, CAN Bus |
-| 하드웨어 | MFRC522, 2축 Joystick, Toggle·Tact Switch, Relay, LED |
-| 협업 | Git, GitHub, Jira, Confluence |
+| NUCLEO-F411RE | Controller MCU |
+| RC522 | RFID 카드 UID 읽기 |
+| HC-05 | Main Node와 Bluetooth 통신 |
+| PS2 Joystick | 2축 아날로그 입력 |
+| 3단 Toggle / Tact Switch | 방향지시등·경적 입력 |
 
-## 프로젝트 결과
+[전체 기능 명세 표](docs/functions.md) · [전체 BOM 표](docs/bom.md)
 
-- Bluetooth Controller와 CAN 차량 네트워크를 연결한 4-Node 시스템 통합
-- RFID 인증과 연동한 Controller 주변장치 전원 제어 구현
-- 하드웨어 전원 차단과 펌웨어 송신 차단을 결합한 이중 인터락 적용
-- ADC Circular DMA와 입력 필터링을 이용한 조이스틱 입력 안정화
-- SPI, ADC, DMA, GPIO EXTI, UART 및 FreeRTOS를 하나의 Controller에 통합
-- Main_Node와 제어 프로토콜을 협의하고 실제 차량 연동 테스트 수행
+[기능 명세 원본 Excel](docs/files/functional-spec.xlsx) · [BOM 원본 Excel](docs/files/BOM.xlsx)
 
-## 향후 개선 방향
+</details>
 
-- 단순 UID 비교보다 안전한 RFID 인증 방식 적용
-- 릴레이를 MOSFET 또는 Load Switch 기반 전원 제어로 개선
-- 패킷 CRC, Sequence Number 및 ACK·재전송 구조 추가
-- HC-05 연결 해제 감지와 자동 재연결 상태 머신 구현
-- 통신 지연, 패킷 손실률 및 반복 동작 성공률 정량 측정
-- 실제 소스 코드 기준 프로토콜과 펌웨어 구조 문서화
+<details>
+<summary>📄 발표자료 미리보기</summary>
 
-## 회고
+**Controller 기능 · 발표자료 24쪽**
 
-첫 펌웨어 팀 프로젝트를 통해 요구사항 분석, 하드웨어 구성, 주변장치 드라이버 구현, FreeRTOS 기능 분리 및 노드 간 통합 테스트로 이어지는 개발 흐름을 경험했습니다.
+![Controller 기능](assets/controller-overview.png)
 
-SPI, ADC, DMA, GPIO EXTI, UART 같은 기술을 개별적으로 사용하는 데서 그치지 않고, RFID 인증 상태가 전원과 Bluetooth 송신 조건에 어떤 영향을 주는지 함께 설계하면서 하드웨어와 소프트웨어 요구사항을 통합적으로 검토하는 중요성을 배웠습니다.
+**ADC DMA 입력 수집 · 발표자료 25쪽**
 
-또한 조이스틱 노이즈, 스위치 채터링, RFID 순간 미검출처럼 실제 하드웨어에서 발생하는 문제를 필터링과 상태 판정 로직으로 개선하며 임베디드 시스템의 예외 처리와 검증 과정을 경험했습니다.
+![ADC DMA 입력 수집](assets/adc-dma.png)
 
----
+</details>
 
-**Controller 담당: 신동민**
-5. 시연 영상 링크 추가
--->
+## 📁 Source Guide
+
+| 경로 | 역할 |
+|---|---|
+| `My_main/SYSTEM/` | 인증·연결 상태, 송신 허용 조건, LED 제어 |
+| `My_main/RFIDCOM/` | RC522 통신 및 UID 판별 |
+| `My_main/SWITCH/` | 조이스틱·토글·택트 입력 처리 |
+| `My_main/BTCOM/` | Bluetooth 프레임 구성 및 UART 송신 |
+| `My_main/BSW/` | 주변장치 초기화 래퍼 |
+| `Core/Src/freertos.c` | Task 생성, 이벤트 처리, UART Mutex 구성 |
+
+[상태·프로토콜 상세와 빌드 안내](docs/controller.md)
+
+## 💬 Retrospective
+
+센서와 통신 기능을 개별적으로 구현하는 것뿐 아니라, 인증 상태와 연결 상태에 따라 입력과 송신을 함께 제어하는 구조를 경험했습니다. 팀원과 제어 명령 규약을 맞추고 실제 차량에 연결하면서, 기능 명세·핀맵·통신 명세가 구현과 일치하도록 관리하는 중요성을 배웠습니다.
