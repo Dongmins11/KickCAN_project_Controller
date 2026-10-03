@@ -100,14 +100,14 @@ RFID와 Bluetooth에서 발생한 이벤트를 `ControlTask`로 모으고, 상�
 - 연결이 끊기면 `WAIT_BT`로 전환해 제어 명령 송신을 차단합니다.
 - 동작 중 미등록 카드를 인식하면 `AUTH_FAILED`로 전환합니다. Bluetooth가 연결되어 있으면 인증 실패를 알리고, 재인증을 기다립니다.
 
-| 인증 성공 · 00:25 | 인증 실패 · 00:31 |
+| 인증 성공 | 인증 실패 |
 |---|---|
 | ![인증 성공 시 녹색·청색 LED와 KEY OK 표시](assets/demo-auth-ok.png) | ![인증 실패 시 적색·청색 LED와 KEY FAIL 표시](assets/demo-auth-failed.png) |
 | Controller의 상태 LED와 차량의 `KEY:OK` 표시 | Controller의 상태 LED와 차량의 `KEY:FAIL` 표시 |
 
-*`Final.mp4`에서 캡처한 실제 시연 장면입니다. FSM은 현재 저장소 코드를 기준으로 정리했습니다.*
-
 [관련 코드: System_Manager.c](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/My_main/SYSTEM/System_Manager.c)
+
+<br>
 
 ### 2. ADC DMA와 필터를 이용한 조이스틱 입력 처리
 
@@ -123,18 +123,22 @@ RFID와 Bluetooth에서 발생한 이벤트를 `ControlTask`로 모으고, 상�
 
 [관련 코드: Joystick.c](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/My_main/SWITCH/Joystick.c)
 
+<br>
+
 ### 3. 이벤트 처리와 UART 공유 자원 관리
 
 스위치 인터럽트에서는 Thread Flag만 전달하고, `ControlTask`에서 디바운싱과 명령 생성을 처리합니다. RFID 처리와 조이스틱 처리를 별도 Task로 나누고, 공통 송신 함수에서는 **UART Mutex**로 프레임이 서로 섞이지 않도록 접근을 제어합니다.
 
 송신 직전에도 제어 가능 상태를 다시 확인하여, 인증 실패나 연결 상태 변경 이후 주행·스위치 명령이 계속 나가지 않도록 구성했습니다.
 
-| 경적 버튼 입력 · 00:44 | 방향지시등 입력 · 00:52 |
+| 경적 버튼 입력 | 방향지시등 입력 |
 |---|---|
 | ![경적 버튼을 누르는 시연 장면](assets/demo-horn.png) | ![토글 조작과 우측 방향지시등 시연 장면](assets/demo-turn.png) |
 | 택트 스위치 입력을 경적 명령으로 전송 | 토글 입력을 차량의 방향지시등·표시부와 연계 |
 
 [Task 구성](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/Core/Src/freertos.c) · [공통 송신 코드](https://github.com/Dongmins11/KickCAN_project_Controller/blob/main/My_main/BTCOM/Bt_Com.c)
+
+<br>
 
 ## 🔧 Troubleshooting
 
@@ -145,21 +149,13 @@ RFID와 Bluetooth에서 발생한 이벤트를 `ControlTask`로 모으고, 상�
 | 개선 단계 | 핵심 대응 |
 |---|---|
 | 프레임 동기화 | Start/End 바이트로 패킷 경계를 식별하고, 정해진 길이의 프레임을 확보 |
-| 무결성 검사 | 검사값이 맞지 않는 프레임을 걸러내 잘못된 제어 데이터의 반영 방지 |
+| 무결성 검사 | CheckSum을 활용해서 검사값이 맞지 않는 프레임을 걸러내 잘못된 제어 데이터의 반영 방지 |
 | 수신 버퍼 보호 | 수신 측 DMA를 Circular에서 Normal 모드로 변경하고, 처리 중인 데이터가 새 수신 데이터로 덮이지 않도록 수신·처리 흐름 분리 |
 
-**결과:** 발표자료에서는 프레임 밀림과 잘못된 데이터 수신, 버퍼 덮어쓰기를 줄여 통신 안정성을 개선한 사례로 정리했습니다.
 
 제 Controller에서는 **Start/End·XOR 체크섬을 포함한 프레임 생성과 UART Mutex 기반 송신**을 구현했습니다. 위 DMA 수신 처리는 **Main Node 수신 측을 포함한 팀 통합 개선 사례**입니다.
 
-<details>
-<summary>발표자료와 Controller 구현의 용어 차이</summary>
-
-발표자료 43쪽은 무결성 검사를 CRC로 설명하지만, 현재 Controller의 `Data_Wrapper()`는 앞 10바이트의 XOR 체크섬을 계산합니다. 따라서 Controller 구현을 CRC로 표기하지 않았습니다. 수신 DMA 변경은 발표자료에 근거한 설명이며, 이 저장소의 조이스틱 ADC는 Circular DMA를 사용합니다.
-
-출처: 팀 발표자료 43쪽.
-
-</details>
+<br>
 
 ## 📋 Design Documents
 
@@ -233,18 +229,7 @@ Start  | Destination | Command | Data | XOR Checksum | End
 
 </details>
 
-<details>
-<summary>📄 발표자료 미리보기</summary>
-
-**Controller 기능 · 발표자료 24쪽**
-
-![Controller 기능](assets/controller-overview.png)
-
-**ADC DMA 입력 수집 · 발표자료 25쪽**
-
-![ADC DMA 입력 수집](assets/adc-dma.png)
-
-</details>
+<br>
 
 ## 📁 Source Guide
 
