@@ -43,6 +43,8 @@
 
 주요 장면과 구현 설명은 아래에서 확인할 수 있습니다.
 
+<br>
+
 ## 🏗️ System Overview
 
 운전자 입력, 차량 구동, 환경 감지, 정보 표시를 네 개 노드로 나누어 차량 전장 시스템을 구성했습니다.
@@ -73,6 +75,8 @@ Controller는 **Bluetooth로 Main Node에 연결**되며, 차량 내부의 세 �
 
 </details>
 
+<br>
+
 ## 🧩 My Contribution
 
 사용자 입력이 **인증 → 연결 확인 → 입력 처리 → 패킷 송신**으로 이어지도록 Controller를 구성했습니다.
@@ -84,6 +88,8 @@ Controller는 **Bluetooth로 Main Node에 연결**되며, 차량 내부의 세 �
 | 스위치 입력 | EXTI 이벤트 전달, Task에서 디바운싱 후 경적·방향지시등 명령 생성 |
 | 무선 통신 | 시작·종료 바이트와 XOR 체크섬을 포함한 12바이트 프레임 송신 |
 | FSM·실행 구조 | 인증·연결 상태 전이 설계, RFID·Joystick·Control Task 분리, UART Mutex 적용 |
+
+<br>
 
 ## ⚙️ Key Implementation
 
