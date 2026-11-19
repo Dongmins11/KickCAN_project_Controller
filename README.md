@@ -1,5 +1,7 @@
 # 🚗 KICK-CAN | STM32 분산 임베디드 RC카
 
+**[📖 프로젝트 상세 · 구현과 문제 해결 보기](https://dongmins11.github.io/portfolio/kickcan.html)**
+
 > RFID로 사용자를 인증하고, 무선 조종기와 CAN 차량 네트워크를 연결해 주행·센서 감지·상태 표시를 구현한 프로젝트입니다.
 
 **이 저장소는 STM32F411 기반 Controller의 하드웨어 인터페이스와 펌웨어를 다룹니다.**
